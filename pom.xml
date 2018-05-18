@@ -44,7 +44,6 @@
   <modules>
     <module>geronimo-microprofile-opentracing-spec</module>
     <module>geronimo-opentracing-impl</module>
-    <module>geronimo-opentracing-impl</module>
     <module>geronimo-opentracing-spec</module>
   </modules>
 
