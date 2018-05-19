@@ -54,10 +54,7 @@ public class OpenTracingServerRequestFilter implements ContainerRequestFilter {
                 .orElseGet(() -> tracer.extract(Format.Builtin.HTTP_HEADERS, new HeaderTextMap<>(context.getHeaders()))))
                         .ifPresent(builder::asChildOf);
 
-        final Span span = builder.startActive(false/* filter does */).span();
-        if (span == null) {
-            return;
-        }
+        final Span span = builder.startActive(true).span();
         if (!"true".equalsIgnoreCase(
                 String.valueOf(context.getProperty("org.apache.geronimo.microprofile.opentracing.server.skipDefaultSpanTags")))) {
             Tags.HTTP_METHOD.set(span, context.getMethod());

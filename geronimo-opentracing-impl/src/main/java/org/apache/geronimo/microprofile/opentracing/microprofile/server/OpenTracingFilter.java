@@ -18,7 +18,6 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
@@ -53,7 +52,6 @@ public class OpenTracingFilter implements Filter {
             });
             throw ex;
         } finally {
-            ofNullable(tracer.scopeManager().active()).ifPresent(Scope::close);
             ofNullable(request.getAttribute(OpenTracingFilter.class.getName())).map(Span.class::cast).ifPresent(span -> {
                 if (request.isAsyncStarted()) {
                     request.getAsyncContext().addListener(new AsyncListener() {

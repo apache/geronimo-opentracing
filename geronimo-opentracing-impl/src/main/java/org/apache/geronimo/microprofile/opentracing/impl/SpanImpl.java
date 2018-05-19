@@ -60,8 +60,9 @@ public class SpanImpl implements Span {
 
     @Override
     public Span log(final long timestampMicroseconds, final Map<String, ?> fields) {
+        final Log log = new Log(timestampMicroseconds, fields);
         synchronized (logs) {
-            logs.add(new Log(timestampMicroseconds, fields));
+            logs.add(log);
         }
         return this;
     }
@@ -149,7 +150,7 @@ public class SpanImpl implements Span {
 
     @Deprecated // TCK compat
     public Object parentId() {
-        return parentId;
+        return parentId == null ? 0L : parentId;
     }
 
     @Deprecated // TCK compat

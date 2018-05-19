@@ -31,11 +31,13 @@ public class ScopeManagerImpl implements ScopeManager {
     public Scope activate(final Span span, final boolean finishSpanOnClose) {
         final Thread thread = Thread.currentThread();
         final Scope oldScope = current.get();
-        return new ScopeImpl(() -> {
+        final ScopeImpl newScope = new ScopeImpl(() -> {
             if (Thread.currentThread() == thread) {
                 current.set(oldScope);
             } // else error?
         }, span, finishSpanOnClose);
+        current.set(newScope);
+        return newScope;
     }
 
     @Override
