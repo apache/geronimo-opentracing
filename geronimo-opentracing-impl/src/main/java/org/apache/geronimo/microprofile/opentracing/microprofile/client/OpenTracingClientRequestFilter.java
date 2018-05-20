@@ -49,6 +49,7 @@ public class OpenTracingClientRequestFilter implements ClientRequestFilter {
 
         final Tracer.SpanBuilder builder = tracer.buildSpan(context.getMethod());
         builder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT);
+        builder.withTag("component", "jaxrs");
 
         ofNullable(SpanContext.class.cast(context.getProperty(CHILD_OF)))
                 .ifPresent(parent -> builder.ignoreActiveSpan().asChildOf(parent));

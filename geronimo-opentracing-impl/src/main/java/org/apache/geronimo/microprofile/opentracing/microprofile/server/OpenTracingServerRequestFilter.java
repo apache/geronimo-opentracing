@@ -49,6 +49,7 @@ public class OpenTracingServerRequestFilter implements ContainerRequestFilter {
 
         final Tracer.SpanBuilder builder = tracer.buildSpan(operationName);
         builder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER);
+        builder.withTag("component", "jaxrs");
 
         ofNullable(ofNullable(tracer.activeSpan()).map(Span::context)
                 .orElseGet(() -> tracer.extract(Format.Builtin.HTTP_HEADERS, new HeaderTextMap<>(context.getHeaders()))))

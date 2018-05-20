@@ -23,7 +23,7 @@ import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 
 @Dependent
-@WebFilter(asyncSupported = true, urlPatterns = "/*")
+@WebFilter(asyncSupported = true, urlPatterns = "/*") // todo: move to initializer
 public class OpenTracingFilter implements Filter {
 
     @Inject
@@ -36,6 +36,7 @@ public class OpenTracingFilter implements Filter {
             chain.doFilter(request, response);
             return;
         }
+        // todo: implicit start for matching urls
         try {
             chain.doFilter(request, response);
         } catch (final Exception ex) {
