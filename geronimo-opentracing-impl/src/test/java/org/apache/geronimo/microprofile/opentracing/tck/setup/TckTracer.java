@@ -136,15 +136,15 @@ public class TckTracer extends GeronimoTracer {
         }
 
         public long startMicros() {
-            return delegate.getStartTimestamp();
+            return delegate.getTimestamp();
         }
 
         public long finishMicros() {
-            return delegate.getFinishTimestamp();
+            return delegate.getTimestamp() + delegate.getDuration();
         }
 
         public String operationName() {
-            return delegate.getOperationName();
+            return delegate.getName();
         }
 
         public Object parentId() {

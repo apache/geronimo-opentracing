@@ -21,7 +21,7 @@ import io.opentracing.Span;
 public class FinishedSpan {
     private final Span span;
 
-    FinishedSpan(final Span span) {
+    public FinishedSpan(final Span span) {
         this.span = span;
     }
 

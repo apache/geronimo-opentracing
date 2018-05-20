@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
+import io.opentracing.tag.Tags;
 
 public class SpanImpl implements Span {
 
@@ -150,32 +151,38 @@ public class SpanImpl implements Span {
                 '}';
     }
 
-    public Collection<ReferenceImpl> getReferences() {
-        return references;
+    public Object getId() {
+        return context.getSpanId();
     }
 
-    public Map<String, Object> getTags() {
-        return tags;
-    }
-
-    public SpanContextImpl getContext() {
-        return context;
-    }
-
-    public long getStartTimestamp() {
-        return startTimestamp;
+    public Object getTraceId() {
+        return context.getTraceId();
     }
 
     public Object getParentId() {
         return parentId;
     }
 
-    public String getOperationName() {
+    public String getName() {
         return operationName;
     }
 
-    public long getFinishTimestamp() {
-        return finishTimestamp;
+    public long getTimestamp() {
+        return startTimestamp;
+    }
+
+    public long getDuration() {
+        return finishTimestamp - startTimestamp;
+    }
+
+    public String getKind() {
+        return tags.entrySet().stream().filter(it -> Tags.SPAN_KIND.getKey().equals(it.getKey()))
+                .findFirst().map(Map.Entry::getValue)
+                .map(String::valueOf).orElse(null);
+    }
+
+    public Map<String, Object> getTags() {
+        return tags;
     }
 
     public Collection<Log> getLogs() {

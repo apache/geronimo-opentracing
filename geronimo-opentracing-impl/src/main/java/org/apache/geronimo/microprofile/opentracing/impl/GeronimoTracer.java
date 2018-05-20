@@ -73,8 +73,8 @@ public class GeronimoTracer implements Tracer {
         }
         final TextMap textMap = TextMap.class.cast(carrier);
         final SpanContextImpl context = SpanContextImpl.class.cast(spanContext);
-        textMap.put("traceid", String.valueOf(context.getTraceId()));
-        textMap.put("spanid", String.valueOf(context.getSpanId()));
+        textMap.put("X-B3-TraceId", String.valueOf(context.getTraceId()));
+        textMap.put("X-B3-SpanId", String.valueOf(context.getSpanId()));
         context.getBaggageItems().forEach((k, v) -> textMap.put("baggage-" + k, v));
     }
 
@@ -82,8 +82,8 @@ public class GeronimoTracer implements Tracer {
     public <C> SpanContext extract(final Format<C> format, final C carrier) {
         if (HeaderTextMap.class.isInstance(carrier)) {
             final MultivaluedMap<String, ?> map = HeaderTextMap.class.cast(carrier).getMap();
-            final String traceid = (String) map.getFirst("traceid");
-            final String spanid = (String) map.getFirst("spanid");
+            final String traceid = (String) map.getFirst("X-B3-TraceId");
+            final String spanid = (String) map.getFirst("X-B3-SpanId");
             if (traceid != null && spanid != null) {
                 return newContext(traceid, spanid, map.keySet().stream().filter(it -> it.startsWith("baggage-"))
                         .collect(toMap(identity(), k -> String.valueOf(map.getFirst(k)))));
@@ -101,9 +101,9 @@ public class GeronimoTracer implements Tracer {
             final Map.Entry<String, String> next = textMap.next();
             if (next.getKey().startsWith("baggage-")) {
                 baggages.put(next.getKey(), next.getValue());
-            } else if ("spanid".equals(next.getKey())) {
+            } else if ("X-B3-SpanId".equals(next.getKey())) {
                 spanId = next.getValue();
-            } else if ("traceid".equals(next.getKey())) {
+            } else if ("X-B3-TracedId".equals(next.getKey())) {
                 traceId = next.getValue();
             }
         }
