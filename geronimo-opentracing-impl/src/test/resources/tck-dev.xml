@@ -20,7 +20,7 @@
     <classes>
       <class name="org.eclipse.microprofile.opentracing.tck.OpentracingClientTests">
         <methods>
-          <include name="testException" />
+          <include name="testMultithreadedNestedSpans"/>
         </methods>
       </class>
     </classes>

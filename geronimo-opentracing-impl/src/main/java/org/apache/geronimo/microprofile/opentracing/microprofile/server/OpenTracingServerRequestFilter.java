@@ -53,7 +53,7 @@ public class OpenTracingServerRequestFilter implements ContainerRequestFilter {
 
         ofNullable(ofNullable(tracer.activeSpan()).map(Span::context)
                 .orElseGet(() -> tracer.extract(Format.Builtin.HTTP_HEADERS, new HeaderTextMap<>(context.getHeaders()))))
-                        .ifPresent(builder::asChildOf);
+                .ifPresent(builder::asChildOf);
 
         final Span span = builder.startActive(true).span();
         if (!"true".equalsIgnoreCase(

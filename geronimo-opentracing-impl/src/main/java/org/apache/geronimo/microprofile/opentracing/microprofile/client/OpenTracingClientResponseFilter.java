@@ -25,7 +25,7 @@ import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientResponseContext;
 import javax.ws.rs.client.ClientResponseFilter;
 
-import io.opentracing.Span;
+import io.opentracing.Scope;
 import io.opentracing.tag.Tags;
 
 @ApplicationScoped
@@ -34,9 +34,10 @@ public class OpenTracingClientResponseFilter implements ClientResponseFilter {
 
     @Override
     public void filter(final ClientRequestContext req, final ClientResponseContext resp) {
-        ofNullable(req.getProperty(OpenTracingClientRequestFilter.class.getName())).map(Span.class::cast).map(span -> {
-            Tags.HTTP_STATUS.set(span, resp.getStatus());
-            return span;
-        }).ifPresent(Span::finish);
+        ofNullable(req.getProperty(OpenTracingClientRequestFilter.class.getName())).map(Scope.class::cast)
+                .ifPresent(scope -> {
+                    Tags.HTTP_STATUS.set(scope.span(), resp.getStatus());
+                    scope.close();
+                });
     }
 }

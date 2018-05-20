@@ -5,7 +5,6 @@ import static java.util.Optional.ofNullable;
 import java.io.IOException;
 import java.util.HashMap;
 
-import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -14,7 +13,6 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -22,8 +20,6 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 
-@Dependent
-@WebFilter(asyncSupported = true, urlPatterns = "/*") // todo: move to initializer
 public class OpenTracingFilter implements Filter {
 
     @Inject

@@ -18,6 +18,7 @@ package org.apache.geronimo.microprofile.opentracing.tck.setup;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -32,7 +33,7 @@ import io.opentracing.Span;
 @Specializes
 @ApplicationScoped
 public class TckTracer extends GeronimoTracer {
-    private final Collection<Span> spans = new ArrayList<>();
+    private final Collection<Span> spans = new LinkedHashSet<>();
 
     synchronized void onSpan(@Observes final FinishedSpan span) {
         spans.add(span.getSpan());

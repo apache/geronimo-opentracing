@@ -42,16 +42,23 @@ public class GeronimoClientTracingRegistrarProvider implements ClientTracingRegi
 
     @Override
     public ClientBuilder configure(final ClientBuilder builder) {
-        return builder.register(requestFilter).register(responseFilter);
+        return configure(builder, new SyncExecutor());
     }
 
     @Override
     public ClientBuilder configure(final ClientBuilder builder, final ExecutorService executorService) {
-        final ExecutorService executor = wrapExecutor(executorService);
-        return configure(builder).property("executorService" /* cxf */, executor);
+        if (builder.getConfiguration().getInstances().stream().anyMatch(it -> requestFilter == it)) {
+            return builder;
+        }
+        return builder.register(requestFilter).register(responseFilter)
+                // todo: reflection for jersey+resteasy to do the same or PR to support that property
+                .property("executorService" /* cxf */, wrapExecutor(executorService));
     }
 
     private ExecutorService wrapExecutor(final ExecutorService executorService) {
+        if (OpenTracingExecutorService.class.isInstance(executorService)) {
+            return executorService;
+        }
         return new OpenTracingExecutorService(executorService, tracer);
     }
 }

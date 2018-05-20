@@ -14,32 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.geronimo.microprofile.opentracing.impl;
+package org.apache.geronimo.microprofile.opentracing.microprofile.server;
 
-public class ReferenceImpl {
+import java.util.EnumSet;
+import java.util.Set;
 
-    private final String type;
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
 
-    private final SpanContextImpl value;
-
-    public ReferenceImpl(final String type, final SpanContextImpl value) {
-        this.type = type;
-        this.value = value;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public SpanContextImpl getValue() {
-        return value;
-    }
-
+public class ServletTracingSetup implements ServletContainerInitializer {
     @Override
-    public String toString() {
-        return "ReferenceImpl{" +
-                "type='" + type + '\'' +
-                ", value=" + value +
-                '}';
+    public void onStartup(final Set<Class<?>> c, final ServletContext ctx) {
+        final FilterRegistration.Dynamic opentracing = ctx.addFilter("opentracing", OpenTracingFilter.class);
+        opentracing.setAsyncSupported(true);
+        opentracing.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, "/*");
     }
 }

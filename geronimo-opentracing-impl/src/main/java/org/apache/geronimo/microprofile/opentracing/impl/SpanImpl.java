@@ -84,6 +84,9 @@ public class SpanImpl implements Span {
 
     @Override
     public void finish(final long finishMicros) {
+        if (finishTimestamp != 0) {
+            return;
+        }
         finishTimestamp = finishMicros;
         onFinish.accept(this);
     }
@@ -133,6 +136,20 @@ public class SpanImpl implements Span {
         return this;
     }
 
+    @Override
+    public String toString() {
+        return "SpanImpl{" +
+                " id=" + context.getSpanId() +
+                ", parentId=" + parentId +
+                ", operationName='" + operationName + '\'' +
+                ", references=" + references +
+                ", tags=" + tags +
+                ", startTimestamp=" + startTimestamp +
+                ", finishTimestamp=" + finishTimestamp +
+                ", logs=" + logs +
+                '}';
+    }
+
     @Deprecated // TCK compat
     public long startMicros() {
         return startTimestamp;
@@ -150,7 +167,7 @@ public class SpanImpl implements Span {
 
     @Deprecated // TCK compat
     public Object parentId() {
-        return parentId == null ? 0L : parentId;
+        return parentId == null ? 0L : Long.parseLong(parentId.toString());
     }
 
     @Deprecated // TCK compat

@@ -51,13 +51,24 @@ public class SpanContextImpl implements SpanContext {
         return baggageItems.entrySet();
     }
 
+    @Override
+    public String toString() {
+        return "SpanContextImpl{" +
+                "traceId=" + traceId +
+                ", spanId=" + spanId +
+                ", baggageItems=" + baggageItems +
+                '}';
+    }
+
     @Deprecated // TCK
     public Object traceId() {
-        return getTraceId();
+        final Object traceId = getTraceId();
+        return traceId == null ? 0L : Long.parseLong(traceId.toString());
     }
 
     @Deprecated // TCK
     public Object spanId() {
-        return getSpanId();
+        final Object spanId = getSpanId();
+        return spanId == null ? 0L : Long.parseLong(spanId.toString());
     }
 }
