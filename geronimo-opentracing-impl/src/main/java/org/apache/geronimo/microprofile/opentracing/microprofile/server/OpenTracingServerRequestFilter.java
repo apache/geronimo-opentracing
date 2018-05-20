@@ -24,6 +24,7 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import org.apache.geronimo.microprofile.opentracing.impl.HeaderTextMap;
 import org.apache.geronimo.microprofile.opentracing.microprofile.client.OpenTracingClientRequestFilter;
 
+import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
@@ -55,13 +56,15 @@ public class OpenTracingServerRequestFilter implements ContainerRequestFilter {
                 .orElseGet(() -> tracer.extract(Format.Builtin.HTTP_HEADERS, new HeaderTextMap<>(context.getHeaders()))))
                 .ifPresent(builder::asChildOf);
 
-        final Span span = builder.startActive(true).span();
+        final Scope scope = builder.startActive(true);
+        final Span span = scope.span();
+
         if (!"true".equalsIgnoreCase(
                 String.valueOf(context.getProperty("org.apache.geronimo.microprofile.opentracing.server.skipDefaultSpanTags")))) {
             Tags.HTTP_METHOD.set(span, context.getMethod());
             Tags.HTTP_URL.set(span, context.getUriInfo().getRequestUri().toASCIIString());
         }
 
-        context.setProperty(OpenTracingFilter.class.getName(), span);
+        context.setProperty(OpenTracingFilter.class.getName(), scope);
     }
 }

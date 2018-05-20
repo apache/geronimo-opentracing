@@ -16,6 +16,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
@@ -36,8 +37,9 @@ public class OpenTracingFilter implements Filter {
         try {
             chain.doFilter(request, response);
         } catch (final Exception ex) {
-            ofNullable(request.getAttribute(OpenTracingFilter.class.getName())).map(Span.class::cast).ifPresent(span -> {
+            ofNullable(request.getAttribute(OpenTracingFilter.class.getName())).map(Scope.class::cast).ifPresent(scope -> {
                 final int status = HttpServletResponse.class.cast(response).getStatus();
+                final Span span = scope.span();
                 Tags.HTTP_STATUS.set(span, status == HttpServletResponse.SC_OK ? HttpServletResponse.SC_INTERNAL_SERVER_ERROR : status);
                 Tags.ERROR.set(span, true);
                 span.log(new HashMap<String, Object>() {
@@ -50,13 +52,13 @@ public class OpenTracingFilter implements Filter {
             });
             throw ex;
         } finally {
-            ofNullable(request.getAttribute(OpenTracingFilter.class.getName())).map(Span.class::cast).ifPresent(span -> {
+            ofNullable(request.getAttribute(OpenTracingFilter.class.getName())).map(Scope.class::cast).ifPresent(scope -> {
                 if (request.isAsyncStarted()) {
                     request.getAsyncContext().addListener(new AsyncListener() {
 
                         @Override
                         public void onComplete(final AsyncEvent event) {
-                            span.finish();
+                            scope.close();
                         }
 
                         @Override
@@ -75,7 +77,7 @@ public class OpenTracingFilter implements Filter {
                         }
                     });
                 } else {
-                    span.finish();
+                    scope.close();
                 }
             });
         }

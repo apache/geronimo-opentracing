@@ -24,7 +24,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 
-import io.opentracing.Span;
+import io.opentracing.Scope;
 import io.opentracing.tag.Tags;
 
 @Priority(Priorities.HEADER_DECORATOR)
@@ -32,7 +32,7 @@ public class OpenTracingServerResponseFilter implements ContainerResponseFilter 
 
     @Override
     public void filter(final ContainerRequestContext req, final ContainerResponseContext resp) {
-        ofNullable(req.getProperty(OpenTracingFilter.class.getName())).map(Span.class::cast)
-                .ifPresent(span -> Tags.HTTP_STATUS.set(span, resp.getStatus()));
+        ofNullable(req.getProperty(OpenTracingFilter.class.getName())).map(Scope.class::cast)
+                .ifPresent(scope -> Tags.HTTP_STATUS.set(scope.span(), resp.getStatus()));
     }
 }
