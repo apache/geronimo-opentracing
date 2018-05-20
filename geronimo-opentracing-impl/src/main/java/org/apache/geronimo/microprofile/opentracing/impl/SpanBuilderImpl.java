@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 
@@ -38,7 +39,7 @@ public class SpanBuilderImpl implements Tracer.SpanBuilder {
 
     private final Tracer tracer;
 
-    private final Consumer<Span> onFinish;
+    private final Consumer<SpanImpl> onFinish;
 
     private final String operationName;
 
@@ -48,13 +49,18 @@ public class SpanBuilderImpl implements Tracer.SpanBuilder {
 
     private final IdGenerator idGenerator;
 
+    private final BiFunction<Object, Map<String, String>, SpanContextImpl> contextFactory;
+
     private boolean ignoreActiveSpan;
 
     private long timestamp = -1;
 
-    public SpanBuilderImpl(final Tracer tracer, final Consumer<Span> onFinish, final String operationName,
-            final IdGenerator idGenerator) {
+    public SpanBuilderImpl(final Tracer tracer,
+                           final BiFunction<Object, Map<String, String>, SpanContextImpl> contextFactory,
+                           final Consumer<SpanImpl> onFinish, final String operationName,
+                           final IdGenerator idGenerator) {
         this.tracer = tracer;
+        this.contextFactory = contextFactory;
         this.onFinish = onFinish;
         this.operationName = operationName;
         this.idGenerator = idGenerator;
@@ -81,7 +87,7 @@ public class SpanBuilderImpl implements Tracer.SpanBuilder {
 
     @Override
     public Tracer.SpanBuilder ignoreActiveSpan() {
-        this.ignoreActiveSpan = ignoreActiveSpan;
+        this.ignoreActiveSpan = true;
         return this;
     }
 
@@ -132,10 +138,15 @@ public class SpanBuilderImpl implements Tracer.SpanBuilder {
                         Spliterators.spliteratorUnknownSize(r.getValue().baggageItems().iterator(), Spliterator.IMMUTABLE),
                         false))
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new SpanImpl(operationName, timestamp, references, tags, onFinish,
-                parent == null ? new SpanContextImpl(idGenerator.next(), idGenerator.next(), baggages)
-                        : new SpanContextImpl(parent.getValue().getTraceId(), idGenerator.next(), baggages),
-                parent == null ? null : parent.getValue().getSpanId());
+        final SpanContextImpl context = parent == null ?
+                newSpanContext(baggages, idGenerator.next()) :
+                newSpanContext(baggages, parent.getValue().getTraceId());
+        final Object parentId = parent == null ? null : parent.getValue().getSpanId();
+        return new SpanImpl(operationName, timestamp, references, tags, onFinish, context, parentId);
+    }
+
+    private SpanContextImpl newSpanContext(final Map<String, String> baggages, final Object parent) {
+        return contextFactory.apply(parent, baggages);
     }
 
     @Override

@@ -16,9 +16,12 @@
  */
 package org.apache.geronimo.microprofile.opentracing.tck.setup;
 
+import static java.util.stream.Collectors.toList;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -26,10 +29,13 @@ import javax.enterprise.inject.Specializes;
 
 import org.apache.geronimo.microprofile.opentracing.impl.FinishedSpan;
 import org.apache.geronimo.microprofile.opentracing.impl.GeronimoTracer;
+import org.apache.geronimo.microprofile.opentracing.impl.SpanContextImpl;
+import org.apache.geronimo.microprofile.opentracing.impl.SpanImpl;
 
 import io.opentracing.Span;
+import io.opentracing.SpanContext;
 
-// compat for TCK, to drop once tcks are fixed - used by reflection!!!!
+// compat for TCK which assume the MockTracer impl for validations
 @Specializes
 @ApplicationScoped
 public class TckTracer extends GeronimoTracer {
@@ -45,5 +51,140 @@ public class TckTracer extends GeronimoTracer {
 
     public synchronized void reset() {
         spans.clear();
+    }
+
+    @Override
+    protected SpanContextImpl newContext(final Object traceId, final Object spanId, final Map<String, String> baggages) {
+        return new TckSpanContext(traceId, spanId, baggages);
+    }
+
+    @Override
+    protected Span processNewSpan(final SpanImpl span) {
+        return new TckSpan(span);
+    }
+
+    public static class TckSpan implements Span {
+        private final SpanImpl delegate;
+
+        public TckSpan(final SpanImpl delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Span log(final long timestampMicroseconds, final Map<String, ?> fields) {
+            return delegate.log(timestampMicroseconds, fields);
+        }
+
+        @Override
+        public SpanContext context() {
+            return delegate.context();
+        }
+
+        @Override
+        public Span log(final long timestampMicroseconds, final String event) {
+            return delegate.log(timestampMicroseconds, event);
+        }
+
+        @Override
+        public void finish() {
+            delegate.finish();
+        }
+
+        @Override
+        public void finish(final long finishMicros) {
+            delegate.finish(finishMicros);
+        }
+
+        @Override
+        public Span setTag(final String key, final String value) {
+            return delegate.setTag(key, value);
+        }
+
+        @Override
+        public Span setTag(final String key, final boolean value) {
+            return delegate.setTag(key, value);
+        }
+
+        @Override
+        public Span setTag(final String key, final Number value) {
+            return delegate.setTag(key, value);
+        }
+
+        @Override
+        public Span log(final Map<String, ?> fields) {
+            return delegate.log(fields);
+        }
+
+        @Override
+        public Span log(final String event) {
+            return delegate.log(event);
+        }
+
+        @Override
+        public Span setBaggageItem(final String key, final String value) {
+            return delegate.setBaggageItem(key, value);
+        }
+
+        @Override
+        public String getBaggageItem(final String key) {
+            return delegate.getBaggageItem(key);
+        }
+
+        @Override
+        public Span setOperationName(final String operationName) {
+            return delegate.setOperationName(operationName);
+        }
+
+        public long startMicros() {
+            return delegate.getStartTimestamp();
+        }
+
+        public long finishMicros() {
+            return delegate.getFinishTimestamp();
+        }
+
+        public String operationName() {
+            return delegate.getOperationName();
+        }
+
+        public Object parentId() {
+            return delegate.getParentId() == null ? 0L : Long.parseLong(delegate.getParentId().toString());
+        }
+
+        public Map<String, Object> tags() {
+            return delegate.getTags();
+        }
+
+        public Collection<SpanImpl.Log> logEntries() {
+            return delegate.getLogs().stream()
+                    .map(l -> new TckLog(l.getTimestampMicros(), l.getFields()))
+                    .collect(toList());
+        }
+    }
+
+    public static class TckLog extends SpanImpl.Log {
+        public TckLog(final long timestampMicros, final Map<String, ?> fields) {
+            super(timestampMicros, fields);
+        }
+
+        public Map<String, ?> fields() {
+            return getFields();
+        }
+    }
+
+    public static class TckSpanContext extends SpanContextImpl {
+        private TckSpanContext(final Object traceId, final Object spanId, final Map<String, String> baggages) {
+            super(traceId, spanId, baggages);
+        }
+
+        public Object traceId() {
+            final Object traceId = getTraceId();
+            return traceId == null ? 0L : Long.parseLong(traceId.toString());
+        }
+
+        public Object spanId() {
+            final Object spanId = getSpanId();
+            return spanId == null ? 0L : Long.parseLong(spanId.toString());
+        }
     }
 }

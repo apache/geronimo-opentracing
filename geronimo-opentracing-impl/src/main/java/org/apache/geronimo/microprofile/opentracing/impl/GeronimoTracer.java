@@ -61,7 +61,9 @@ public class GeronimoTracer implements Tracer {
 
     @Override
     public SpanBuilder buildSpan(final String operationName) {
-        return new SpanBuilderImpl(this, span -> finishedSpanEvent.fire(new FinishedSpan(span)), operationName, idGenerator);
+        return new SpanBuilderImpl(
+                this, (traceId, baggages) -> newContext(traceId, idGenerator.next(), baggages),
+                span -> finishedSpanEvent.fire(new FinishedSpan(processNewSpan(span))), operationName, idGenerator);
     }
 
     @Override
@@ -83,7 +85,7 @@ public class GeronimoTracer implements Tracer {
             final String traceid = (String) map.getFirst("traceid");
             final String spanid = (String) map.getFirst("spanid");
             if (traceid != null && spanid != null) {
-                return new SpanContextImpl(traceid, spanid, map.keySet().stream().filter(it -> it.startsWith("baggage-"))
+                return newContext(traceid, spanid, map.keySet().stream().filter(it -> it.startsWith("baggage-"))
                         .collect(toMap(identity(), k -> String.valueOf(map.getFirst(k)))));
             }
             return null;
@@ -106,8 +108,16 @@ public class GeronimoTracer implements Tracer {
             }
         }
         if (traceId != null && spanId != null) {
-            return new SpanContextImpl(traceId, spanId, baggages);
+            return newContext(traceId, spanId, baggages);
         }
         return null;
+    }
+
+    protected Span processNewSpan(final SpanImpl span) {
+        return span;
+    }
+
+    protected SpanContextImpl newContext(final Object traceId, final Object spanId, final Map<String, String> baggages) {
+        return new SpanContextImpl(traceId, spanId, baggages);
     }
 }

@@ -33,7 +33,7 @@ public class SpanImpl implements Span {
 
     private final Map<String, Object> tags;
 
-    private final Consumer<Span> onFinish;
+    private final Consumer<SpanImpl> onFinish;
 
     private final SpanContextImpl context;
 
@@ -48,7 +48,7 @@ public class SpanImpl implements Span {
     private final Collection<Log> logs = new ArrayList<>();
 
     public SpanImpl(final String operationName, final long startTimestamp, final Collection<ReferenceImpl> references,
-            final Map<String, Object> tags, final Consumer<Span> onFinish, final SpanContextImpl context, final Object parentId) {
+                    final Map<String, Object> tags, final Consumer<SpanImpl> onFinish, final SpanContextImpl context, final Object parentId) {
         this.operationName = operationName;
         this.startTimestamp = startTimestamp;
         this.references = references;
@@ -150,33 +150,35 @@ public class SpanImpl implements Span {
                 '}';
     }
 
-    @Deprecated // TCK compat
-    public long startMicros() {
-        return startTimestamp;
+    public Collection<ReferenceImpl> getReferences() {
+        return references;
     }
 
-    @Deprecated // TCK compat
-    public long finishMicros() {
-        return finishTimestamp;
-    }
-
-    @Deprecated // TCK compat
-    public String operationName() {
-        return operationName;
-    }
-
-    @Deprecated // TCK compat
-    public Object parentId() {
-        return parentId == null ? 0L : Long.parseLong(parentId.toString());
-    }
-
-    @Deprecated // TCK compat
-    public Map<String, Object> tags() {
+    public Map<String, Object> getTags() {
         return tags;
     }
 
-    @Deprecated // TCK compat
-    public Collection<Log> logEntries() {
+    public SpanContextImpl getContext() {
+        return context;
+    }
+
+    public long getStartTimestamp() {
+        return startTimestamp;
+    }
+
+    public Object getParentId() {
+        return parentId;
+    }
+
+    public String getOperationName() {
+        return operationName;
+    }
+
+    public long getFinishTimestamp() {
+        return finishTimestamp;
+    }
+
+    public Collection<Log> getLogs() {
         return logs;
     }
 
@@ -186,7 +188,7 @@ public class SpanImpl implements Span {
 
         private final Map<String, ?> fields;
 
-        private Log(long timestampMicros, Map<String, ?> fields) {
+        public Log(long timestampMicros, Map<String, ?> fields) {
             this.timestampMicros = timestampMicros;
             this.fields = fields;
         }
@@ -197,11 +199,6 @@ public class SpanImpl implements Span {
 
         public Map<String, ?> getFields() {
             return fields;
-        }
-
-        @Deprecated // TCK compat
-        public Map<String, ?> fields() {
-            return getFields();
         }
     }
 }

@@ -59,16 +59,4 @@ public class SpanContextImpl implements SpanContext {
                 ", baggageItems=" + baggageItems +
                 '}';
     }
-
-    @Deprecated // TCK
-    public Object traceId() {
-        final Object traceId = getTraceId();
-        return traceId == null ? 0L : Long.parseLong(traceId.toString());
-    }
-
-    @Deprecated // TCK
-    public Object spanId() {
-        final Object spanId = getSpanId();
-        return spanId == null ? 0L : Long.parseLong(spanId.toString());
-    }
 }
