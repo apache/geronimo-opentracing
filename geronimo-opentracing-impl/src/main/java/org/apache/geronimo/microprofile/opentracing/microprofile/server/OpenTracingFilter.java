@@ -41,7 +41,8 @@ public class OpenTracingFilter implements Filter {
             chain.doFilter(request, response);
         } catch (final Exception ex) {
             ofNullable(request.getAttribute(OpenTracingFilter.class.getName())).map(Span.class::cast).ifPresent(span -> {
-                Tags.HTTP_STATUS.set(span, HttpServletResponse.class.cast(response).getStatus());
+                final int status = HttpServletResponse.class.cast(response).getStatus();
+                Tags.HTTP_STATUS.set(span, status == HttpServletResponse.SC_OK ? HttpServletResponse.SC_INTERNAL_SERVER_ERROR : status);
                 Tags.ERROR.set(span, true);
                 span.log(new HashMap<String, Object>() {
 
