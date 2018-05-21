@@ -1,30 +1,76 @@
 package org.apache.geronimo.microprofile.opentracing.microprofile.server;
 
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
+import org.apache.geronimo.microprofile.opentracing.impl.ScopeManagerImpl;
+import org.apache.geronimo.microprofile.opentracing.impl.ServletHeaderTextMap;
+
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
 
 public class OpenTracingFilter implements Filter {
 
     @Inject
     private Tracer tracer;
+
+    @Inject
+    private GeronimoOpenTracingConfig config;
+
+    @Inject
+    private ScopeManagerImpl manager;
+
+    private Collection<Predicate<String>> forcedUrls;
+
+    private boolean skipDefaultTags;
+
+    @Override
+    public void init(final FilterConfig filterConfig) throws ServletException {
+        skipDefaultTags = Boolean.parseBoolean(config.read("filter.forcedTracing.skipDefaultTags", "false"));
+        forcedUrls = ofNullable(config.read("filter.forcedTracing.urls", null)).map(String::trim).filter(v -> !v.isEmpty())
+                .map(v -> {
+                    final String matchingType = config.read("filter.forcedTracing.matcherType", "prefix");
+                    final Function<String, Predicate<String>> matcherFactory;
+                    switch (matchingType) {
+                    case "regex":
+                        matcherFactory = from -> {
+                            final Pattern compiled = Pattern.compile(from);
+                            return url -> compiled.matcher(url).matches();
+                        };
+                        break;
+                    case "prefix":
+                    default:
+                        matcherFactory = from -> url -> url.startsWith(from);
+                    }
+                    return Stream.of(v.split(",")).map(String::trim).filter(it -> !it.isEmpty()).map(matcherFactory)
+                            .collect(toList());
+                }).orElse(null);
+    }
 
     @Override
     public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain)
@@ -33,26 +79,50 @@ public class OpenTracingFilter implements Filter {
             chain.doFilter(request, response);
             return;
         }
-        // todo: implicit start for matching urls
+        if (forcedUrls != null && !forcedUrls.isEmpty()) {
+            final HttpServletRequest req = HttpServletRequest.class.cast(request);
+            final String matching = req.getRequestURI().substring(req.getContextPath().length());
+            if (forcedUrls.stream().anyMatch(p -> p.test(matching))) {
+                final Tracer.SpanBuilder builder = tracer.buildSpan(buildServletOperationName(req));
+                builder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER);
+                builder.withTag("component", "servlet");
+
+                ofNullable(ofNullable(tracer.activeSpan()).map(Span::context)
+                        .orElseGet(() -> tracer.extract(Format.Builtin.HTTP_HEADERS,
+                                new ServletHeaderTextMap(req, HttpServletResponse.class.cast(response)))))
+                                        .ifPresent(builder::asChildOf);
+
+                final Scope scope = builder.startActive(true);
+                final Span span = scope.span();
+
+                if (!skipDefaultTags) {
+                    Tags.HTTP_METHOD.set(span, req.getMethod());
+                    Tags.HTTP_URL.set(span, req.getRequestURL().toString());
+                }
+
+                request.setAttribute(OpenTracingFilter.class.getName(), scope);
+            }
+        }
         try {
             chain.doFilter(request, response);
         } catch (final Exception ex) {
-            ofNullable(request.getAttribute(OpenTracingFilter.class.getName())).map(Scope.class::cast).ifPresent(scope -> {
-                final int status = HttpServletResponse.class.cast(response).getStatus();
-                final Span span = scope.span();
-                Tags.HTTP_STATUS.set(span, status == HttpServletResponse.SC_OK ? HttpServletResponse.SC_INTERNAL_SERVER_ERROR : status);
-                Tags.ERROR.set(span, true);
-                span.log(new HashMap<String, Object>() {
+            getCurrentScope(request).ifPresent(scope -> {
+                        final int status = HttpServletResponse.class.cast(response).getStatus();
+                        final Span span = scope.span();
+                        Tags.HTTP_STATUS.set(span,
+                                status == HttpServletResponse.SC_OK ? HttpServletResponse.SC_INTERNAL_SERVER_ERROR : status);
+                        Tags.ERROR.set(span, true);
+                        span.log(new HashMap<String, Object>() {
 
-                    {
-                        put("event", Tags.ERROR.getKey());
-                        put("event.object", ex);
-                    }
-                });
-            });
+                            {
+                                put("event", Tags.ERROR.getKey());
+                                put("event.object", ex);
+                            }
+                        });
+                    });
             throw ex;
         } finally {
-            ofNullable(request.getAttribute(OpenTracingFilter.class.getName())).map(Scope.class::cast).ifPresent(scope -> {
+            getCurrentScope(request).ifPresent(scope -> {
                 if (request.isAsyncStarted()) {
                     request.getAsyncContext().addListener(new AsyncListener() {
 
@@ -76,10 +146,20 @@ public class OpenTracingFilter implements Filter {
                             // no-op
                         }
                     });
+                    manager.clear();
                 } else {
                     scope.close();
                 }
             });
         }
+    }
+
+    private Optional<Scope> getCurrentScope(final ServletRequest request) {
+        return ofNullable(ofNullable(request.getAttribute(OpenTracingFilter.class.getName()))
+                .orElseGet(() -> tracer.scopeManager().active())).map(Scope.class::cast);
+    }
+
+    protected String buildServletOperationName(final HttpServletRequest req) {
+        return req.getMethod() + ":" + req.getRequestURL();
     }
 }

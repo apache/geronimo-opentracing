@@ -16,6 +16,7 @@
  */
 package org.apache.geronimo.microprofile.opentracing.impl;
 
+import static java.util.Collections.list;
 import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
@@ -24,9 +25,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MultivaluedMap;
 
 import io.opentracing.Scope;
@@ -36,6 +39,8 @@ import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
+
+import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
 
 @ApplicationScoped
 public class GeronimoTracer implements Tracer {
@@ -48,6 +53,20 @@ public class GeronimoTracer implements Tracer {
 
     @Inject
     private Event<FinishedSpan> finishedSpanEvent;
+
+    @Inject
+    private GeronimoOpenTracingConfig config;
+
+    private String spanIdHeader;
+    private String traceIdHeader;
+    private String baggageHeaderPrefix;
+
+    @PostConstruct
+    private void init() {
+        spanIdHeader = config.read("propagation.headers.spanId", "X-B3-SpanId");
+        traceIdHeader = config.read("propagation.headers.traceId", "X-B3-TraceId");
+        baggageHeaderPrefix = config.read("propagation.headers.baggagePrefix", "baggage-");
+    }
 
     @Override
     public ScopeManager scopeManager() {
@@ -73,20 +92,30 @@ public class GeronimoTracer implements Tracer {
         }
         final TextMap textMap = TextMap.class.cast(carrier);
         final SpanContextImpl context = SpanContextImpl.class.cast(spanContext);
-        textMap.put("X-B3-TraceId", String.valueOf(context.getTraceId()));
-        textMap.put("X-B3-SpanId", String.valueOf(context.getSpanId()));
-        context.getBaggageItems().forEach((k, v) -> textMap.put("baggage-" + k, v));
+        textMap.put(traceIdHeader, String.valueOf(context.getTraceId()));
+        textMap.put(spanIdHeader, String.valueOf(context.getSpanId()));
+        context.getBaggageItems().forEach((k, v) -> textMap.put(baggageHeaderPrefix + k, v));
     }
 
     @Override
     public <C> SpanContext extract(final Format<C> format, final C carrier) {
-        if (HeaderTextMap.class.isInstance(carrier)) {
-            final MultivaluedMap<String, ?> map = HeaderTextMap.class.cast(carrier).getMap();
-            final String traceid = (String) map.getFirst("X-B3-TraceId");
-            final String spanid = (String) map.getFirst("X-B3-SpanId");
+        if (JaxRsHeaderTextMap.class.isInstance(carrier)) {
+            final MultivaluedMap<String, ?> map = JaxRsHeaderTextMap.class.cast(carrier).getMap();
+            final String traceid = (String) map.getFirst(traceIdHeader);
+            final String spanid = (String) map.getFirst(spanIdHeader);
             if (traceid != null && spanid != null) {
-                return newContext(traceid, spanid, map.keySet().stream().filter(it -> it.startsWith("baggage-"))
+                return newContext(traceid, spanid, map.keySet().stream().filter(it -> it.startsWith(baggageHeaderPrefix))
                         .collect(toMap(identity(), k -> String.valueOf(map.getFirst(k)))));
+            }
+            return null;
+        }
+        if (ServletHeaderTextMap.class.isInstance(carrier)) {
+            final HttpServletRequest req = ServletHeaderTextMap.class.cast(carrier).getRequest();
+            final String traceid = req.getHeader(traceIdHeader);
+            final String spanid = req.getHeader(spanIdHeader);
+            if (traceid != null && spanid != null) {
+                return newContext(traceid, spanid, list(req.getHeaderNames()).stream().filter(it -> it.startsWith(baggageHeaderPrefix))
+                        .collect(toMap(identity(), k -> String.valueOf(req.getHeader(k)))));
             }
             return null;
         }
@@ -99,11 +128,11 @@ public class GeronimoTracer implements Tracer {
         final Map<String, String> baggages = new HashMap<>();
         while (textMap.hasNext()) {
             final Map.Entry<String, String> next = textMap.next();
-            if (next.getKey().startsWith("baggage-")) {
+            if (next.getKey().startsWith(baggageHeaderPrefix)) {
                 baggages.put(next.getKey(), next.getValue());
-            } else if ("X-B3-SpanId".equals(next.getKey())) {
+            } else if (spanIdHeader.equals(next.getKey())) {
                 spanId = next.getValue();
-            } else if ("X-B3-TracedId".equals(next.getKey())) {
+            } else if (traceIdHeader.equals(next.getKey())) {
                 traceId = next.getValue();
             }
         }

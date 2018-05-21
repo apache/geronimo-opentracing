@@ -21,7 +21,7 @@ import static java.util.Optional.ofNullable;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 
-import org.apache.geronimo.microprofile.opentracing.impl.HeaderTextMap;
+import org.apache.geronimo.microprofile.opentracing.impl.JaxRsHeaderTextMap;
 import org.apache.geronimo.microprofile.opentracing.microprofile.client.OpenTracingClientRequestFilter;
 
 import io.opentracing.Scope;
@@ -36,15 +36,21 @@ public class OpenTracingServerRequestFilter implements ContainerRequestFilter {
 
     private final Tracer tracer;
 
-    public OpenTracingServerRequestFilter(final String operationName, final Tracer tracer) {
+    private final boolean skip;
+
+    private final boolean skipDefaultTags;
+
+    public OpenTracingServerRequestFilter(final String operationName, final Tracer tracer,
+                                          final boolean skip, final boolean skipDefaultTags) {
         this.operationName = operationName;
         this.tracer = tracer;
+        this.skip = skip;
+        this.skipDefaultTags = skipDefaultTags;
     }
 
     @Override
     public void filter(final ContainerRequestContext context) {
-        if (context.getProperty(OpenTracingClientRequestFilter.class.getName()) != null || "true"
-                .equalsIgnoreCase(String.valueOf(context.getProperty("org.apache.geronimo.microprofile.opentracing.skip")))) {
+        if (context.getProperty(OpenTracingClientRequestFilter.class.getName()) != null || skip) {
             return;
         }
 
@@ -53,14 +59,13 @@ public class OpenTracingServerRequestFilter implements ContainerRequestFilter {
         builder.withTag("component", "jaxrs");
 
         ofNullable(ofNullable(tracer.activeSpan()).map(Span::context)
-                .orElseGet(() -> tracer.extract(Format.Builtin.HTTP_HEADERS, new HeaderTextMap<>(context.getHeaders()))))
+                .orElseGet(() -> tracer.extract(Format.Builtin.HTTP_HEADERS, new JaxRsHeaderTextMap<>(context.getHeaders()))))
                 .ifPresent(builder::asChildOf);
 
         final Scope scope = builder.startActive(true);
         final Span span = scope.span();
 
-        if (!"true".equalsIgnoreCase(
-                String.valueOf(context.getProperty("org.apache.geronimo.microprofile.opentracing.server.skipDefaultSpanTags")))) {
+        if (!skipDefaultTags) {
             Tags.HTTP_METHOD.set(span, context.getMethod());
             Tags.HTTP_URL.set(span, context.getUriInfo().getRequestUri().toASCIIString());
         }

@@ -1,0 +1,25 @@
+= Geronimo OpenTracing
+
+Geronimo OpenTracing provides an OpenTracing implementation and a Microprofile OpenTracing implementation at once.
+
+== Configuration
+
+NOTE: if you are using Microprofile Config it is used, otherwise it uses system properties.
+
+|===
+| Key | Description | Default
+|geronimo.opentracing.filter.active|Should OpenTracing be activated|true
+|geronimo.opentracing.filter.forcedTracing.urls|Urls for which the tracking should be activated automatically. The urls are actually the requets uri minus the context path.|-
+|geronimo.opentracing.filter.forcedTracing.matcherType|Type of matcher for the url, default is `prefix` which means a `startsWith` is used on the url but you can also use `regex` which compiles the url as a `Pattern`|prefix
+|geronimo.opentracing.filter.forcedTracing.skipDefaultTags|Should `HTTP_METHOD`, `HTTP_URL` not be added to tags|false
+|geronimo.opentracing.server.filter.request.skip.<endpoint class>_<endpoint method>|Should server instrumentation be ignored|false
+|geronimo.opentracing.server.filter.request.skip|Should server instrumentation be ignored (if previous is not set)|false
+|geronimo.opentracing.server.filter.request.skipDefaultTags|Should `HTTP_METHOD`, `HTTP_URL` not be added to tags|false
+|geronimo.opentracing.client.filter.request.skip|Should client instrumentation be ignored|false
+|geronimo.opentracing.client.filter.request.skipDefaultTags|Should `HTTP_METHOD`, `HTTP_URL` not be added to tags|false
+|geronimo.opentracing.client.filter.request.skipPeerTags|Should `PEER_HOSTNAME`, `PEER_PORT` not be added to tags|false
+|geronimo.opentracing.propagation.headers.spanId|Name of the header used to host the spanId value|`X-B3-SpanId`
+|geronimo.opentracing.propagation.headers.traceId|Name of the header used to host the traceId value|`X-B3-TraceId`
+|geronimo.opentracing.propagation.headers.baggagePrefix|Prefix of headers used to host the baggage values|`baggage-`
+|geronimo.opentracing.cdi.executorServices.wrappedNames|Name (as CDI names of the beans) of executor services which will get an interceptor propagating the current scope (span)|-
+|===

@@ -23,11 +23,11 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import io.opentracing.propagation.TextMap;
 
-public class HeaderTextMap<T> implements TextMap {
+public class JaxRsHeaderTextMap<T> implements TextMap {
 
     private final MultivaluedMap<String, T> headers;
 
-    public HeaderTextMap(final MultivaluedMap<String, T> headers) {
+    public JaxRsHeaderTextMap(final MultivaluedMap<String, T> headers) {
         this.headers = headers;
     }
 

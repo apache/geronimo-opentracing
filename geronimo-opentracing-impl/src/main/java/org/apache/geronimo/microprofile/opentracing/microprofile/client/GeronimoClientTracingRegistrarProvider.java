@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.client.ClientBuilder;
 
+import org.apache.geronimo.microprofile.opentracing.microprofile.thread.OpenTracingExecutorService;
 import org.eclipse.microprofile.opentracing.ClientTracingRegistrarProvider;
 
 import io.opentracing.Tracer;

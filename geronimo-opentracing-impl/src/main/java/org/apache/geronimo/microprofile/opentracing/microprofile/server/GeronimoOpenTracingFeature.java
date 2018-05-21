@@ -30,6 +30,7 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 
+import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
 import org.eclipse.microprofile.opentracing.Traced;
 
 import io.opentracing.Tracer;
@@ -41,10 +42,15 @@ public class GeronimoOpenTracingFeature implements DynamicFeature {
     @Inject
     private Tracer tracer;
 
+    @Inject
+    private GeronimoOpenTracingConfig config;
+
     @Override
     public void configure(final ResourceInfo resourceInfo, final FeatureContext context) {
         if (tracer == null) { // configured instead of scanned
-            tracer = CDI.current().select(Tracer.class).get();
+            CDI<Object> cdi = CDI.current();
+            tracer = cdi.select(Tracer.class).get();
+            config = cdi.select(GeronimoOpenTracingConfig.class).get();
         }
 
         final Optional<Traced> traced = ofNullable(ofNullable(resourceInfo.getResourceMethod().getAnnotation(Traced.class))
@@ -59,6 +65,9 @@ public class GeronimoOpenTracingFeature implements DynamicFeature {
                         .map(a -> a.annotationType().getAnnotation(HttpMethod.class).value()).orElse("") + ':'
                         + resourceInfo.getResourceClass().getName() + "." + resourceInfo.getResourceMethod().getName());
         context.register(new OpenTracingServerResponseFilter())
-                .register(new OpenTracingServerRequestFilter(operationName, tracer));
+                .register(new OpenTracingServerRequestFilter(
+                        operationName, tracer,
+                        Boolean.parseBoolean(config.read("server.filter.request.skip." + resourceInfo.getResourceClass().getName() + "_" + resourceInfo.getResourceMethod().getName(), config.read("server.filter.request.skip", "false"))),
+                        Boolean.parseBoolean(config.read("server.filter.request.skipDefaultTags", "false"))));
     }
 }

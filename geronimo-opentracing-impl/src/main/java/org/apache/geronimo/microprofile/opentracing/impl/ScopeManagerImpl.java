@@ -48,4 +48,8 @@ public class ScopeManagerImpl implements ScopeManager {
         }
         return scope;
     }
+
+    public void clear() {
+        current.remove();
+    }
 }

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.geronimo.microprofile.opentracing.microprofile.client;
+package org.apache.geronimo.microprofile.opentracing.microprofile.thread;
 
 import static java.util.stream.Collectors.toList;
 
@@ -27,9 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import io.opentracing.Span;
 import io.opentracing.Tracer;
-import io.opentracing.tag.Tags;
 
 public class OpenTracingExecutorService implements ExecutorService {
 
@@ -40,20 +38,6 @@ public class OpenTracingExecutorService implements ExecutorService {
     public OpenTracingExecutorService(final ExecutorService executorService, final Tracer tracer) {
         this.delegate = executorService;
         this.tracer = tracer;
-    }
-
-    private Span before() {
-        return tracer.activeSpan();
-    }
-
-    private void after(final Span span, final RuntimeException error) {
-        if (span != null && error != null) {
-            Tags.ERROR.set(span, true);
-            if (error.getMessage() != null) {
-                span.setTag("errorMessage", error.getMessage());
-                span.setTag("errorType", error.getClass().getName());
-            }
-        }
     }
 
     @Override
@@ -124,32 +108,22 @@ public class OpenTracingExecutorService implements ExecutorService {
     }
 
     private Runnable wrap(final Runnable task) {
+        final ScopePropagatingCallable<Void> decorator = new ScopePropagatingCallable<>(() -> {
+            task.run();
+            return null;
+        }, tracer);
         return () -> {
-            RuntimeException error = null;
-            final Span span = before();
             try {
-                task.run();
-            } catch (final RuntimeException re) {
-                error = re;
-                throw re;
-            } finally {
-                after(span, error);
+                decorator.call();
+            } catch (final RuntimeException | Error e) {
+                throw e;
+            } catch (final Exception e) { // unlikely since that's a Runnable
+                throw new IllegalStateException(e);
             }
         };
     }
 
     private <T> Callable<T> wrap(final Callable<T> task) {
-        return () -> {
-            RuntimeException error = null;
-            final Span span = before();
-            try {
-                return task.call();
-            } catch (final RuntimeException re) {
-                error = re;
-                throw re;
-            } finally {
-                after(span, error);
-            }
-        };
+        return new ScopePropagatingCallable<>(task, tracer);
     }
 }

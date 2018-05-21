@@ -24,9 +24,15 @@ import javax.servlet.FilterRegistration;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 
+import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
+
 public class ServletTracingSetup implements ServletContainerInitializer {
     @Override
     public void onStartup(final Set<Class<?>> c, final ServletContext ctx) {
+        final GeronimoOpenTracingConfig config  = GeronimoOpenTracingConfig.create();
+        if (!"true".equalsIgnoreCase(config.read("filter.active", "true"))) {
+            return;
+        }
         final FilterRegistration.Dynamic opentracing = ctx.addFilter("opentracing", OpenTracingFilter.class);
         opentracing.setAsyncSupported(true);
         opentracing.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, "/*");

@@ -21,12 +21,14 @@ import static java.util.Optional.ofNullable;
 
 import java.util.function.Consumer;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 
-import org.apache.geronimo.microprofile.opentracing.impl.HeaderTextMap;
+import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
+import org.apache.geronimo.microprofile.opentracing.impl.JaxRsHeaderTextMap;
 
 import io.opentracing.Scope;
 import io.opentracing.Span;
@@ -41,10 +43,23 @@ public class OpenTracingClientRequestFilter implements ClientRequestFilter {
     @Inject
     private Tracer tracer;
 
+    @Inject
+    private GeronimoOpenTracingConfig config;
+
+    private boolean skip;
+    private boolean skipDefaultTags;
+    private boolean skipPeerTags;
+
+    @PostConstruct
+    private void init() {
+        skip = Boolean.parseBoolean(config.read("client.filter.request.skip", "false"));
+        skipDefaultTags = Boolean.parseBoolean(config.read("client.filter.request.skipDefaultTags", "false"));
+        skipPeerTags = Boolean.parseBoolean(config.read("client.filter.request.skipPeerTags", "false"));
+    }
+
     @Override
     public void filter(final ClientRequestContext context) {
-        if (context.getProperty(OpenTracingClientRequestFilter.class.getName()) != null || "true"
-                .equalsIgnoreCase(String.valueOf(context.getProperty("org.apache.geronimo.microprofile.opentracing.skip")))) {
+        if (context.getProperty(OpenTracingClientRequestFilter.class.getName()) != null || skip) {
             return;
         }
 
@@ -57,8 +72,7 @@ public class OpenTracingClientRequestFilter implements ClientRequestFilter {
 
         final Scope scope = builder.startActive(true);
         final Span span = scope.span();
-        if (!"true".equalsIgnoreCase(
-                String.valueOf(context.getProperty("org.apache.geronimo.microprofile.opentracing.client.skipDefaultSpanTags")))) {
+        if (!skipDefaultTags) {
             Tags.HTTP_METHOD.set(span, context.getMethod());
             Tags.HTTP_URL.set(span, context.getUri().toASCIIString());
         }
@@ -71,7 +85,7 @@ public class OpenTracingClientRequestFilter implements ClientRequestFilter {
         ofNullable(context.getProperty("org.apache.geronimo.microprofile.opentracing.spanConsumer"))
                 .ifPresent(consumer -> Consumer.class.cast(consumer).accept(span));
 
-        tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new HeaderTextMap<>(context.getHeaders()));
+        tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new JaxRsHeaderTextMap<>(context.getHeaders()));
         context.setProperty(OpenTracingClientRequestFilter.class.getName(), scope);
 
     }

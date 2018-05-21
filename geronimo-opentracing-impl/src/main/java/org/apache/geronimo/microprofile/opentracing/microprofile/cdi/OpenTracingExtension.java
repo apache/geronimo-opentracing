@@ -16,9 +16,23 @@
  */
 package org.apache.geronimo.microprofile.opentracing.microprofile.cdi;
 
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toSet;
+
+import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.stream.Stream;
+
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Any;
+import javax.enterprise.inject.Default;
+import javax.enterprise.inject.spi.AfterBeanDiscovery;
 import javax.enterprise.inject.spi.AnnotatedMethod;
 import javax.enterprise.inject.spi.AnnotatedType;
+import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.Extension;
 import javax.enterprise.inject.spi.ProcessAnnotatedType;
 import javax.enterprise.inject.spi.WithAnnotations;
@@ -26,22 +40,48 @@ import javax.enterprise.inject.spi.configurator.AnnotatedTypeConfigurator;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 
+import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
+import org.apache.geronimo.microprofile.opentracing.microprofile.thread.OpenTracingExecutorService;
 import org.eclipse.microprofile.opentracing.Traced;
 
 public class OpenTracingExtension implements Extension {
+
+    private GeronimoOpenTracingConfig config;
+
+    private Collection<String> instrumentedExecutorServices;
+
+    void onStart(@Observes final BeforeBeanDiscovery beforeBeanDiscovery) {
+        config = GeronimoOpenTracingConfig.create();
+        instrumentedExecutorServices = ofNullable(config.read("cdi.executorServices.wrappedNames", null))
+                .map(s -> Stream.of(s.split(",")).map(String::trim).filter(it -> !it.isEmpty()).collect(toSet())).orElse(null);
+    }
+
     <T> void removeTracedFromJaxRsEndpoints(@Observes @WithAnnotations(Traced.class) final ProcessAnnotatedType<T> pat) {
         if (isJaxRs(pat.getAnnotatedType())) { // we have filters with more accurate timing
             final AnnotatedTypeConfigurator<T> configurator = pat.configureAnnotatedType();
             configurator.remove(it -> it.annotationType() == Traced.class);
-            configurator.methods().stream()
-                    .filter(m -> isJaxRs(m.getAnnotated()))
+            configurator.methods().stream().filter(m -> isJaxRs(m.getAnnotated()))
                     .forEach(m -> m.remove(it -> it.annotationType() == Traced.class));
         }
     }
 
+    <T> void instrumentExecutorServices(@Observes final ProcessAnnotatedType<T> pat) {
+        final Set<Type> typeClosure = pat.getAnnotatedType().getTypeClosure();
+        if (typeClosure.contains(ExecutorService.class) && !typeClosure.contains(OpenTracingExecutorService.class)) {
+            pat.configureAnnotatedType().add(TracedExecutorService.Literal.INSTANCE);
+        }
+    }
+
+    void addConfigAsBean(@Observes final AfterBeanDiscovery afterBeanDiscovery) {
+        afterBeanDiscovery.addBean().id(OpenTracingExtension.class.getName() + "#" + GeronimoOpenTracingConfig.class.getName())
+                .beanClass(GeronimoOpenTracingConfig.class).types(GeronimoOpenTracingConfig.class, Object.class)
+                .qualifiers(Default.Literal.INSTANCE, Any.Literal.INSTANCE).scope(ApplicationScoped.class)
+                .createWith(ctx -> config);
+    }
+
     private <T> boolean isJaxRs(final AnnotatedType<T> annotatedType) {
-        return annotatedType.getAnnotations().stream().anyMatch(it -> it.annotationType() == Path.class) ||
-                annotatedType.getMethods().stream().anyMatch(this::isJaxRs);
+        return annotatedType.getAnnotations().stream().anyMatch(it -> it.annotationType() == Path.class)
+                || annotatedType.getMethods().stream().anyMatch(this::isJaxRs);
     }
 
     private <T> boolean isJaxRs(final AnnotatedMethod<? super T> m) {
