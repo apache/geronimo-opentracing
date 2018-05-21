@@ -24,7 +24,7 @@ import javax.servlet.FilterRegistration;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 
-import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
+import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingConfig;
 
 public class ServletTracingSetup implements ServletContainerInitializer {
     @Override

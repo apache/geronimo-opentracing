@@ -16,14 +16,57 @@
  */
 package org.apache.geronimo.microprofile.opentracing.impl;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingConfig;
 
 @ApplicationScoped
 public class IdGenerator {
+    private static final char[] HEXA_MAPPING = "0123456789ABCDEF".toCharArray();
+
+    @Inject
+    private GeronimoOpenTracingConfig config;
+
+    private Supplier<Object> delegate;
+
+    @PostConstruct
+    private void createDelegate() {
+        switch (config.read("id.generator", "counter")) {
+            case "counter":
+                delegate = new Supplier<Object>() {
+                    private final AtomicLong counter = new AtomicLong();
+
+                    @Override
+                    public Object get() {
+                        return counter.incrementAndGet();
+                    }
+                };
+                break;
+            case "uuid":
+                delegate = () -> UUID.randomUUID().toString();
+                break;
+            case "hex":
+            default:
+                delegate = () -> toHex(UUID.randomUUID().toString().replace("-", "").getBytes(StandardCharsets.UTF_8));
+        }
+    }
 
     public Object next() {
-        return UUID.randomUUID().toString();
+        return delegate.get();
+    }
+
+    private String toHex(final byte[] uuid) {
+        final StringBuilder representation = new StringBuilder(uuid.length * 2);
+        for (final byte current : uuid) {
+            representation.append(HEXA_MAPPING[(current >> 4) & 0xF]).append(HEXA_MAPPING[(current & 0xF)]);
+        }
+        return representation.toString();
     }
 }

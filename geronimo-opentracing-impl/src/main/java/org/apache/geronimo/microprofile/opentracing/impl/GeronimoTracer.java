@@ -40,7 +40,7 @@ import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
 
-import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
+import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingConfig;
 
 @ApplicationScoped
 public class GeronimoTracer implements Tracer {

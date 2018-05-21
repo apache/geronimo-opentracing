@@ -30,7 +30,7 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 
-import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
+import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingConfig;
 import org.eclipse.microprofile.opentracing.Traced;
 
 import io.opentracing.Tracer;

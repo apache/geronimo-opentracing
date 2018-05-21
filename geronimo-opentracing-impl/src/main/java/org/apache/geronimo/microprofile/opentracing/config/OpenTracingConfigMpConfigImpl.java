@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.geronimo.microprofile.config;
+package org.apache.geronimo.microprofile.opentracing.config;
 
 import javax.enterprise.inject.Vetoed;
 

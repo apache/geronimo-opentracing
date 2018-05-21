@@ -14,22 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.geronimo.microprofile.opentracing.tck.setup;
+package org.apache.geronimo.microprofile.opentracing.microprofile.zipkin;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Specializes;
+import javax.enterprise.event.Observes;
+import javax.json.bind.Jsonb;
+import javax.json.bind.JsonbBuilder;
 
-import org.apache.geronimo.microprofile.opentracing.impl.IdGenerator;
-
-@Specializes
+// this allows to integrate with any backend using appenders.
 @ApplicationScoped
-public class LongIdGenerator extends IdGenerator {
+public class ZipkinLogger {
 
-    private final AtomicLong id = new AtomicLong();
+    private final Logger logger = Logger.getLogger(ZipkinLogger.class.getName());
 
-    public Object next() {
-        return id.incrementAndGet();
+    private Jsonb jsonb;
+
+    @PostConstruct
+    private void init() {
+        jsonb = JsonbBuilder.create();
+    }
+
+    @PreDestroy
+    private void destroy() {
+        try {
+            jsonb.close();
+        } catch (final Exception e) {
+            // no-op
+        }
+    }
+
+    public void onZipkinSpan(@Observes final ZipkinSpan zipkinSpan) {
+        logger.info(jsonb.toJson(zipkinSpan));
     }
 }

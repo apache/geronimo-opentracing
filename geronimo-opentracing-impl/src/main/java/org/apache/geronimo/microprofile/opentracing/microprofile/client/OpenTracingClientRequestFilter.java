@@ -27,7 +27,7 @@ import javax.inject.Inject;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 
-import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
+import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingConfig;
 import org.apache.geronimo.microprofile.opentracing.impl.JaxRsHeaderTextMap;
 
 import io.opentracing.Scope;
@@ -76,9 +76,9 @@ public class OpenTracingClientRequestFilter implements ClientRequestFilter {
             Tags.HTTP_METHOD.set(span, context.getMethod());
             Tags.HTTP_URL.set(span, context.getUri().toASCIIString());
         }
-        if ("true".equalsIgnoreCase(
-                String.valueOf(context.getProperty("org.apache.geronimo.microprofile.opentracing.client.addPeerTags")))) {
-            Tags.PEER_HOSTNAME.set(span, context.getUri().getHost());
+        if (!skipPeerTags) {
+            final String host = context.getUri().getHost();
+            Tags.PEER_HOSTNAME.set(span, host);
             Tags.PEER_PORT.set(span, context.getUri().getPort());
         }
         // customization point

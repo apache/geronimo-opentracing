@@ -40,8 +40,10 @@ import javax.enterprise.inject.spi.configurator.AnnotatedTypeConfigurator;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 
-import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
+import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingConfig;
 import org.apache.geronimo.microprofile.opentracing.microprofile.thread.OpenTracingExecutorService;
+import org.apache.geronimo.microprofile.opentracing.microprofile.zipkin.ZipkinConverter;
+import org.apache.geronimo.microprofile.opentracing.microprofile.zipkin.ZipkinLogger;
 import org.eclipse.microprofile.opentracing.Traced;
 
 public class OpenTracingExtension implements Extension {
@@ -50,10 +52,27 @@ public class OpenTracingExtension implements Extension {
 
     private Collection<String> instrumentedExecutorServices;
 
+    private boolean useZipkin;
+    private boolean useZipkinLogger;
+
     void onStart(@Observes final BeforeBeanDiscovery beforeBeanDiscovery) {
         config = GeronimoOpenTracingConfig.create();
+        useZipkin = Boolean.parseBoolean(config.read("span.converter.zipkin.active", "true"));
+        useZipkinLogger = useZipkin && Boolean.parseBoolean(config.read("span.converter.zipkin.logger.active", "true"));
         instrumentedExecutorServices = ofNullable(config.read("cdi.executorServices.wrappedNames", null))
                 .map(s -> Stream.of(s.split(",")).map(String::trim).filter(it -> !it.isEmpty()).collect(toSet())).orElse(null);
+    }
+
+    void zipkinConverterToggle(@Observes final ProcessAnnotatedType<ZipkinConverter> onZipkinConverter) {
+        if (!useZipkin) {
+            onZipkinConverter.veto();
+        }
+    }
+
+    void zipkinLoggerToggle(@Observes final ProcessAnnotatedType<ZipkinLogger> onZipkinLogger) {
+        if (!useZipkinLogger) {
+            onZipkinLogger.veto();
+        }
     }
 
     <T> void removeTracedFromJaxRsEndpoints(@Observes @WithAnnotations(Traced.class) final ProcessAnnotatedType<T> pat) {

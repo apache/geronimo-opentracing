@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.toList;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -24,7 +25,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.geronimo.microprofile.config.GeronimoOpenTracingConfig;
+import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingConfig;
 import org.apache.geronimo.microprofile.opentracing.impl.ScopeManagerImpl;
 import org.apache.geronimo.microprofile.opentracing.impl.ServletHeaderTextMap;
 
@@ -47,29 +48,39 @@ public class OpenTracingFilter implements Filter {
 
     private Collection<Predicate<String>> forcedUrls;
 
+    private List<Predicate<String>> skipUrls;
+
     private boolean skipDefaultTags;
 
     @Override
     public void init(final FilterConfig filterConfig) throws ServletException {
         skipDefaultTags = Boolean.parseBoolean(config.read("filter.forcedTracing.skipDefaultTags", "false"));
-        forcedUrls = ofNullable(config.read("filter.forcedTracing.urls", null)).map(String::trim).filter(v -> !v.isEmpty())
-                .map(v -> {
-                    final String matchingType = config.read("filter.forcedTracing.matcherType", "prefix");
-                    final Function<String, Predicate<String>> matcherFactory;
-                    switch (matchingType) {
-                    case "regex":
-                        matcherFactory = from -> {
-                            final Pattern compiled = Pattern.compile(from);
-                            return url -> compiled.matcher(url).matches();
-                        };
-                        break;
-                    case "prefix":
-                    default:
-                        matcherFactory = from -> url -> url.startsWith(from);
-                    }
-                    return Stream.of(v.split(",")).map(String::trim).filter(it -> !it.isEmpty()).map(matcherFactory)
-                            .collect(toList());
-                }).orElse(null);
+        forcedUrls = ofNullable(config.read("filter.forcedTracing.urls", null))
+                .map(String::trim).filter(v -> !v.isEmpty())
+                .map(v -> toMatchingPredicates(v, "forcedTracing"))
+                .orElse(null);
+        skipUrls = ofNullable(config.read("filter.skippedTracing.urls", null))
+                .map(String::trim).filter(v -> !v.isEmpty())
+                .map(v -> toMatchingPredicates(v, "skippedTracing"))
+                .orElse(null);
+    }
+
+    private List<Predicate<String>> toMatchingPredicates(final String v, final String keyMarker) {
+        final String matchingType = config.read("filter." + keyMarker + ".matcherType", "prefix");
+        final Function<String, Predicate<String>> matcherFactory;
+        switch (matchingType) {
+        case "regex":
+            matcherFactory = from -> {
+                final Pattern compiled = Pattern.compile(from);
+                return url -> compiled.matcher(url).matches();
+            };
+            break;
+        case "prefix":
+        default:
+            matcherFactory = from -> url -> url.startsWith(from);
+        }
+        return Stream.of(v.split(",")).map(String::trim).filter(it -> !it.isEmpty()).map(matcherFactory)
+                     .collect(toList());
     }
 
     @Override
@@ -101,6 +112,14 @@ public class OpenTracingFilter implements Filter {
                 }
 
                 request.setAttribute(OpenTracingFilter.class.getName(), scope);
+            }
+        }
+        if (skipUrls != null && !skipUrls.isEmpty()) {
+            final HttpServletRequest req = HttpServletRequest.class.cast(request);
+            final String matching = req.getRequestURI().substring(req.getContextPath().length());
+            if (forcedUrls.stream().anyMatch(p -> p.test(matching))) {
+                chain.doFilter(request, response);
+                return;
             }
         }
         try {

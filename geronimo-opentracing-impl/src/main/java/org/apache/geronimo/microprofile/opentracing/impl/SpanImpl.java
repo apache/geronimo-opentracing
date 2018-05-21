@@ -189,6 +189,10 @@ public class SpanImpl implements Span {
         return logs;
     }
 
+    public Collection<ReferenceImpl> getReferences() {
+        return references;
+    }
+
     public static class Log {
 
         private final long timestampMicros;

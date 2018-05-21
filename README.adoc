@@ -2,6 +2,9 @@
 
 Geronimo OpenTracing provides an OpenTracing implementation and a Microprofile OpenTracing implementation at once.
 
+NOTE: sampling is not yet supported because it leads to push inconsistent spans to the backend, however you can always specialize (CDI)
+your `FinishSpan` observer to implement it if desired.
+
 == Configuration
 
 NOTE: if you are using Microprofile Config it is used, otherwise it uses system properties.
@@ -10,6 +13,8 @@ NOTE: if you are using Microprofile Config it is used, otherwise it uses system 
 | Key | Description | Default
 |geronimo.opentracing.filter.active|Should OpenTracing be activated|true
 |geronimo.opentracing.filter.forcedTracing.urls|Urls for which the tracking should be activated automatically. The urls are actually the requets uri minus the context path.|-
+|geronimo.opentracing.filter.skippedTracing.urls|Urls for which the tracking should be skipped.|-
+|geronimo.opentracing.filter.skippedTracing.matcherType|Type of matcher for the url, default is `prefix` which means a `startsWith` is used on the url but you can also use `regex` which compiles the url as a `Pattern`|prefix
 |geronimo.opentracing.filter.forcedTracing.matcherType|Type of matcher for the url, default is `prefix` which means a `startsWith` is used on the url but you can also use `regex` which compiles the url as a `Pattern`|prefix
 |geronimo.opentracing.filter.forcedTracing.skipDefaultTags|Should `HTTP_METHOD`, `HTTP_URL` not be added to tags|false
 |geronimo.opentracing.server.filter.request.skip.<endpoint class>_<endpoint method>|Should server instrumentation be ignored|false
@@ -22,4 +27,7 @@ NOTE: if you are using Microprofile Config it is used, otherwise it uses system 
 |geronimo.opentracing.propagation.headers.traceId|Name of the header used to host the traceId value|`X-B3-TraceId`
 |geronimo.opentracing.propagation.headers.baggagePrefix|Prefix of headers used to host the baggage values|`baggage-`
 |geronimo.opentracing.cdi.executorServices.wrappedNames|Name (as CDI names of the beans) of executor services which will get an interceptor propagating the current scope (span)|-
+|geronimo.opentracing.id.generator|`counter` (to generate longs), `uuid` (to generate random uuids) or `hex` (to use the hexa representation of the uuid generator). Specifies which kind of trace and span id are in use.|hex
+|geronimo.opentracing.span.converter.zipkin.active|Should spans converted to a zipkin representation. True until there is a standard opentracing format.|true
+|geronimo.opentracing.span.converter.zipkin.logger.active|Should a logger named `org.apache.geronimo.opentracing.zipkin` log each span as a Zipkin JSON. This allows to use a logger implementation to push the spans to any backend (like log4j2 kafka appender). It uses JUL as a facade.|true
 |===
