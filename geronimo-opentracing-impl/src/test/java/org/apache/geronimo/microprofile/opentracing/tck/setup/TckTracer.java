@@ -64,10 +64,11 @@ public class TckTracer extends GeronimoTracer {
         return new TckSpan(span);
     }
 
-    public static class TckSpan implements Span {
+    public static class TckSpan extends SpanImpl {
         private final SpanImpl delegate;
 
         public TckSpan(final SpanImpl delegate) {
+            super(delegate.getName(), delegate.getTimestamp(), delegate.getReferences(), delegate.getTags(), ignored -> {}, SpanContextImpl.class.cast(delegate.context()));
             this.delegate = delegate;
         }
 

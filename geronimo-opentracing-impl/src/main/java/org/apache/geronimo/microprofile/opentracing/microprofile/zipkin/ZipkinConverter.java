@@ -22,6 +22,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
@@ -37,6 +39,7 @@ import javax.inject.Inject;
 
 import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingConfig;
 import org.apache.geronimo.microprofile.opentracing.impl.FinishedSpan;
+import org.apache.geronimo.microprofile.opentracing.impl.IdGenerator;
 import org.apache.geronimo.microprofile.opentracing.impl.SpanImpl;
 
 import io.opentracing.Span;
@@ -53,6 +56,16 @@ public class ZipkinConverter {
     @Inject
     private GeronimoOpenTracingConfig config;
 
+    @Inject
+    private IdGenerator idGenerator;
+
+    private String serviceName;
+
+    @PostConstruct
+    private void init() {
+        serviceName = config.read("zipkin.serviceName", getHostName() + "_" + getPid());
+    }
+
     public void onSpan(@Observes final FinishedSpan finishedSpan) {
         final Span from = finishedSpan.getSpan();
         if (!SpanImpl.class.isInstance(from)) {
@@ -61,21 +74,46 @@ public class ZipkinConverter {
         zipkinSpanEvent.fire(toZipkin(SpanImpl.class.cast(from)));
     }
 
+    private String getPid() {
+        return ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+    }
+
+    private String getHostName() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (final UnknownHostException e) {
+            return "server";
+        }
+    }
+
     private ZipkinSpan toZipkin(final SpanImpl span) {
+        final ZipkinSpan.ZipkinEndpoint endpoint = toEndpoint(span);
+
         final ZipkinSpan zipkin = new ZipkinSpan();
-        zipkin.setParentId(asLong(span.getParentId()));
-        zipkin.setTraceId(asLong(span.getTraceId()));
-        zipkin.setId(asLong(span.getId()));
+        if (idGenerator.isCounter()) {
+            zipkin.setParentId(asLong(span.getParentId()));
+            zipkin.setTraceId(asLong(span.getTraceId()));
+            zipkin.setId(asLong(span.getId()));
+        } else {
+            zipkin.setParentId(span.getParentId());
+            zipkin.setTraceId(span.getTraceId());
+            zipkin.setId(span.getId());
+        }
         zipkin.setName(span.getName());
         zipkin.setKind(ofNullable(span.getKind()).map(s -> s.toUpperCase(ROOT)).orElse(null));
         zipkin.setTimestamp(span.getTimestamp());
         zipkin.setDuration(span.getDuration());
+        zipkin.setAnnotations(toAnnotations(span));
+        zipkin.setBinaryAnnotations(toBinaryAnnotations(span.getTags()));
         zipkin.setTags(span.getTags().entrySet().stream().filter(e -> !Tags.SPAN_KIND.getKey().equalsIgnoreCase(e.getKey()))
                 .collect(toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))));
 
-        final ZipkinSpan.ZipkinEndpoint endpoint = toEndpoint(span);
-        zipkin.setAnnotations(toAnnotations(endpoint, span));
-        zipkin.setBinaryAnnotations(toBinaryAnnotations(endpoint, span.getTags()));
+        if (Tags.SPAN_KIND_CLIENT.equals(String.valueOf(span.getTags().get(Tags.SPAN_KIND.getKey())))) {
+            zipkin.setRemoteEndpoint(endpoint);
+        } else { // server
+            zipkin.setLocalEndpoint(endpoint);
+        }
+
         return zipkin;
     }
 
@@ -92,120 +130,114 @@ public class ZipkinConverter {
     private ZipkinSpan.ZipkinEndpoint toEndpoint(final SpanImpl span) {
         final Map<String, Object> tags = span.getTags();
         switch (String.valueOf(tags.get(Tags.SPAN_KIND.getKey()))) {
-        case Tags.SPAN_KIND_CLIENT: {
-            String ipv4 = (String) tags.get(Tags.PEER_HOST_IPV4.getKey());
-            String ipv6 = (String) tags.get(Tags.PEER_HOST_IPV6.getKey());
-            if (ipv4 == null && ipv6 == null && tags.containsKey(Tags.PEER_HOSTNAME.getKey())) {
-                try {
-                    final String hostAddress = InetAddress.getByName(tags.get(Tags.PEER_HOSTNAME.getKey()).toString())
-                            .getHostAddress();
-                    if (hostAddress.contains("::")) {
-                        ipv6 = hostAddress;
-                    } else {
-                        ipv4 = hostAddress;
+            case Tags.SPAN_KIND_CLIENT: {
+                String ipv4 = (String) tags.get(Tags.PEER_HOST_IPV4.getKey());
+                String ipv6 = (String) tags.get(Tags.PEER_HOST_IPV6.getKey());
+                if (ipv4 == null && ipv6 == null && tags.containsKey(Tags.PEER_HOSTNAME.getKey())) {
+                    try {
+                        final String hostAddress = InetAddress.getByName(tags.get(Tags.PEER_HOSTNAME.getKey()).toString())
+                                .getHostAddress();
+                        if (hostAddress.contains("::")) {
+                            ipv6 = hostAddress;
+                        } else {
+                            ipv4 = hostAddress;
+                        }
+                    } catch (final UnknownHostException e) {
+                        // no-op
                     }
-                } catch (final UnknownHostException e) {
-                    // no-op
                 }
+
+                final Integer port = (Integer) tags.get(Tags.PEER_PORT.getKey());
+
+                final ZipkinSpan.ZipkinEndpoint endpoint = new ZipkinSpan.ZipkinEndpoint();
+                endpoint.setServiceName(serviceName);
+                endpoint.setIpv4(ipv4);
+                endpoint.setIpv6(ipv6);
+                endpoint.setPort(port == null ? 0 : port);
+
+                return endpoint;
             }
+            case Tags.SPAN_KIND_SERVER: {
+                final String url = (String) tags.get(Tags.HTTP_URL.getKey());
+                String ipv4 = null;
+                String ipv6 = null;
+                Integer port = null;
+                if (url != null) {
+                    try {
+                        final URL asUrl = new URL(url);
+                        port = asUrl.getPort();
 
-            final Integer port = (Integer) tags.get(Tags.PEER_PORT.getKey());
-
-            final ZipkinSpan.ZipkinEndpoint endpoint = new ZipkinSpan.ZipkinEndpoint();
-            endpoint.setServiceName(span.getName());
-            endpoint.setIpv4(ipv4);
-            endpoint.setIpv6(ipv6);
-            endpoint.setPort(port == null ? 0 : port);
-
-            return endpoint;
-        }
-        case Tags.SPAN_KIND_SERVER: {
-            final String url = (String) tags.get(Tags.HTTP_URL.getKey());
-            String ipv4 = null;
-            String ipv6 = null;
-            Integer port = null;
-            if (url != null) {
-                try {
-                    final URL asUrl = new URL(url);
-                    port = asUrl.getPort();
-
-                    final String host = asUrl.getHost();
-                    final String hostAddress = host.contains(":") ? host : InetAddress.getByName(host).getHostAddress();
-                    if (hostAddress.contains("::")) {
-                        ipv6 = hostAddress;
-                    } else {
-                        ipv4 = hostAddress;
+                        final String host = asUrl.getHost();
+                        final String hostAddress = host.contains(":") ? host : InetAddress.getByName(host).getHostAddress();
+                        if (hostAddress.contains("::")) {
+                            ipv6 = hostAddress;
+                        } else {
+                            ipv4 = hostAddress;
+                        }
+                    } catch (final UnknownHostException | MalformedURLException e) {
+                        // no-op
                     }
-                } catch (final UnknownHostException | MalformedURLException e) {
-                    // no-op
                 }
+
+                final ZipkinSpan.ZipkinEndpoint endpoint = new ZipkinSpan.ZipkinEndpoint();
+                endpoint.setServiceName(span.getName());
+                endpoint.setIpv4(ipv4);
+                endpoint.setIpv6(ipv6);
+                endpoint.setPort(port == null ? 0 : port);
+
+                return endpoint;
             }
-
-            final ZipkinSpan.ZipkinEndpoint endpoint = new ZipkinSpan.ZipkinEndpoint();
-            endpoint.setServiceName(span.getName());
-            endpoint.setIpv4(ipv4);
-            endpoint.setIpv6(ipv6);
-            endpoint.setPort(port == null ? 0 : port);
-
-            return endpoint;
-        }
-        default:
-            return null;
+            default:
+                return null;
         }
     }
 
-    private List<ZipkinSpan.ZipkinAnnotation> toAnnotations(final ZipkinSpan.ZipkinEndpoint endpoint, final SpanImpl span) {
+    private List<ZipkinSpan.ZipkinAnnotation> toAnnotations(final SpanImpl span) {
         final Map<String, Object> tags = span.getTags();
         final List<ZipkinSpan.ZipkinAnnotation> annotations = new ArrayList<>(2);
         switch (String.valueOf(tags.get(Tags.SPAN_KIND.getKey()))) {
-        case Tags.SPAN_KIND_CLIENT: {
-            {
-                final ZipkinSpan.ZipkinAnnotation clientSend = new ZipkinSpan.ZipkinAnnotation();
-                clientSend.setValue("cs");
-                clientSend.setTimestamp(span.getTimestamp());
-                clientSend.setEndpoint(endpoint);
-                annotations.add(clientSend);
+            case Tags.SPAN_KIND_CLIENT: {
+                {
+                    final ZipkinSpan.ZipkinAnnotation clientSend = new ZipkinSpan.ZipkinAnnotation();
+                    clientSend.setValue("cs");
+                    clientSend.setTimestamp(span.getTimestamp());
+                    annotations.add(clientSend);
+                }
+                {
+                    final ZipkinSpan.ZipkinAnnotation clientReceived = new ZipkinSpan.ZipkinAnnotation();
+                    clientReceived.setValue("cr");
+                    clientReceived.setTimestamp(span.getTimestamp() + span.getDuration());
+                    annotations.add(clientReceived);
+                }
+                return annotations;
             }
-            {
-                final ZipkinSpan.ZipkinAnnotation clientReceived = new ZipkinSpan.ZipkinAnnotation();
-                clientReceived.setValue("cr");
-                clientReceived.setTimestamp(span.getTimestamp() + span.getDuration());
-                clientReceived.setEndpoint(endpoint);
-                annotations.add(clientReceived);
-            }
-            return annotations;
-        }
-        case Tags.SPAN_KIND_SERVER: {
-            {
-                final ZipkinSpan.ZipkinAnnotation serverReceived = new ZipkinSpan.ZipkinAnnotation();
-                serverReceived.setValue("sr");
-                serverReceived.setTimestamp(span.getTimestamp());
-                serverReceived.setEndpoint(endpoint);
-                annotations.add(serverReceived);
-            }
-            {
+            case Tags.SPAN_KIND_SERVER: {
+                {
+                    final ZipkinSpan.ZipkinAnnotation serverReceived = new ZipkinSpan.ZipkinAnnotation();
+                    serverReceived.setValue("sr");
+                    serverReceived.setTimestamp(span.getTimestamp());
+                    annotations.add(serverReceived);
+                }
+                {
 
-                final ZipkinSpan.ZipkinAnnotation serverSend = new ZipkinSpan.ZipkinAnnotation();
-                serverSend.setValue("ss");
-                serverSend.setTimestamp(span.getTimestamp() + span.getDuration());
-                serverSend.setEndpoint(endpoint);
-                annotations.add(serverSend);
+                    final ZipkinSpan.ZipkinAnnotation serverSend = new ZipkinSpan.ZipkinAnnotation();
+                    serverSend.setValue("ss");
+                    serverSend.setTimestamp(span.getTimestamp() + span.getDuration());
+                    annotations.add(serverSend);
+                }
+                return annotations;
             }
-            return annotations;
-        }
-        default:
-            return emptyList();
+            default:
+                return emptyList();
         }
     }
 
-    private List<ZipkinSpan.ZipkinBinaryAnnotation> toBinaryAnnotations(final ZipkinSpan.ZipkinEndpoint endpoint,
-            final Map<String, Object> tags) {
+    private List<ZipkinSpan.ZipkinBinaryAnnotation> toBinaryAnnotations(final Map<String, Object> tags) {
         return tags.entrySet().stream().map(tag -> {
             final ZipkinSpan.ZipkinBinaryAnnotation annotations = new ZipkinSpan.ZipkinBinaryAnnotation();
             annotations.setType(findAnnotationType(tag.getValue()));
             annotations.setKey(tag.getKey());
             annotations.setValue(tag.getValue());
-            annotations.setEndpoint(endpoint);
             return annotations;
         }).collect(toList());
     }

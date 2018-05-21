@@ -20,9 +20,9 @@ import java.util.List;
 import java.util.Map;
 
 public class ZipkinSpan {
-    private long traceId;
-    private Long parentId;
-    private long id;
+    private Object traceId;
+    private Object parentId;
+    private Object id;
     private String name;
     private String kind;
     private Long timestamp;
@@ -35,27 +35,27 @@ public class ZipkinSpan {
     private Boolean debug;
     private Boolean shared;
 
-    public long getTraceId() {
+    public Object getTraceId() {
         return traceId;
     }
 
-    public void setTraceId(final long traceId) {
+    public void setTraceId(final Object traceId) {
         this.traceId = traceId;
     }
 
-    public Long getParentId() {
+    public Object getParentId() {
         return parentId;
     }
 
-    public void setParentId(final Long parentId) {
+    public void setParentId(final Object parentId) {
         this.parentId = parentId;
     }
 
-    public long getId() {
+    public Object getId() {
         return id;
     }
 
-    public void setId(final long id) {
+    public void setId(final Object id) {
         this.id = id;
     }
 
@@ -150,7 +150,6 @@ public class ZipkinSpan {
     public static class ZipkinAnnotation {
         private long timestamp;
         private String value;
-        private ZipkinEndpoint endpoint;
 
         public long getTimestamp() {
             return timestamp;
@@ -167,21 +166,12 @@ public class ZipkinSpan {
         public void setValue(final String value) {
             this.value = value;
         }
-
-        public ZipkinEndpoint getEndpoint() {
-            return endpoint;
-        }
-
-        public void setEndpoint(final ZipkinEndpoint endpoint) {
-            this.endpoint = endpoint;
-        }
     }
 
     public static class ZipkinBinaryAnnotation {
         private String key;
         private int type;
         private Object value;
-        private ZipkinEndpoint endpoint;
 
         public String getKey() {
             return key;
@@ -205,14 +195,6 @@ public class ZipkinSpan {
 
         public void setValue(final Object value) {
             this.value = value;
-        }
-
-        public ZipkinEndpoint getEndpoint() {
-            return endpoint;
-        }
-
-        public void setEndpoint(final ZipkinEndpoint endpoint) {
-            this.endpoint = endpoint;
         }
     }
 

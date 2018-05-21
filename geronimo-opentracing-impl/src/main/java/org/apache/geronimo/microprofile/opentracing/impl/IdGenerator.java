@@ -29,16 +29,19 @@ import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingCo
 
 @ApplicationScoped
 public class IdGenerator {
-    private static final char[] HEXA_MAPPING = "0123456789ABCDEF".toCharArray();
+    private static final char[] HEXA_MAPPING = "0123456789abcdef".toCharArray();
 
     @Inject
     private GeronimoOpenTracingConfig config;
 
     private Supplier<Object> delegate;
+    private boolean counter;
 
     @PostConstruct
     private void createDelegate() {
-        switch (config.read("id.generator", "counter")) {
+        final String type = config.read("id.generator", "counter");
+        counter = "counter".equalsIgnoreCase(type);
+        switch (type) {
             case "counter":
                 delegate = new Supplier<Object>() {
                     private final AtomicLong counter = new AtomicLong();
@@ -56,6 +59,10 @@ public class IdGenerator {
             default:
                 delegate = () -> toHex(UUID.randomUUID().toString().replace("-", "").getBytes(StandardCharsets.UTF_8));
         }
+    }
+
+    public boolean isCounter() {
+        return counter;
     }
 
     public Object next() {
