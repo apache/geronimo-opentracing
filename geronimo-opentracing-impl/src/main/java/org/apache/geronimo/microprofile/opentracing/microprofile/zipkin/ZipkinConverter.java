@@ -17,6 +17,8 @@
 package org.apache.geronimo.microprofile.opentracing.microprofile.zipkin;
 
 import static java.util.Collections.emptyList;
+import static java.util.Locale.ROOT;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
@@ -65,7 +67,7 @@ public class ZipkinConverter {
         zipkin.setTraceId(Long.class.cast(span.getTraceId()));
         zipkin.setId(Long.class.cast(span.getId()));
         zipkin.setName(span.getName());
-        zipkin.setKind(span.getKind());
+        zipkin.setKind(ofNullable(span.getKind()).map(s -> s.toUpperCase(ROOT)).orElse(null));
         zipkin.setTimestamp(span.getTimestamp());
         zipkin.setDuration(span.getDuration());
         zipkin.setTags(span.getTags().entrySet().stream().filter(e -> !Tags.SPAN_KIND.getKey().equalsIgnoreCase(e.getKey()))
