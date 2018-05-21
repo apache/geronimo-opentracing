@@ -32,7 +32,7 @@ import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingCo
 @ApplicationScoped
 public class ZipkinLogger {
 
-    private final Logger logger = Logger.getLogger(ZipkinLogger.class.getName());
+    private final Logger spanLogger = Logger.getLogger("org.apache.geronimo.opentracing.zipkin");
 
     @Inject
     private GeronimoOpenTracingConfig config;
@@ -58,6 +58,6 @@ public class ZipkinLogger {
 
     public void onZipkinSpan(@Observes final ZipkinSpan zipkinSpan) {
         final String json = jsonb.toJson(zipkinSpan);
-        logger.info(wrapAsList ? '[' + json + ']' : json);
+        spanLogger.info(wrapAsList ? '[' + json + ']' : json);
     }
 }
