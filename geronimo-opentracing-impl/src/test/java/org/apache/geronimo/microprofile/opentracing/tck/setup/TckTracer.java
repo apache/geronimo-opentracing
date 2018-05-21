@@ -54,8 +54,9 @@ public class TckTracer extends GeronimoTracer {
     }
 
     @Override
-    protected SpanContextImpl newContext(final Object traceId, final Object spanId, final Map<String, String> baggages) {
-        return new TckSpanContext(traceId, spanId, baggages);
+    protected SpanContextImpl newContext(final Object traceId, final Object parentSpanId,
+                                         final Object spanId, final Map<String, String> baggages) {
+        return new TckSpanContext(traceId, parentSpanId, spanId, baggages);
     }
 
     @Override
@@ -173,13 +174,18 @@ public class TckTracer extends GeronimoTracer {
     }
 
     public static class TckSpanContext extends SpanContextImpl {
-        private TckSpanContext(final Object traceId, final Object spanId, final Map<String, String> baggages) {
-            super(traceId, spanId, baggages);
+        private TckSpanContext(final Object traceId, final Object parentSpanId, final Object spanId, final Map<String, String> baggages) {
+            super(traceId, parentSpanId, spanId, baggages);
         }
 
         public Object traceId() {
             final Object traceId = getTraceId();
             return traceId == null ? 0L : Long.parseLong(traceId.toString());
+        }
+
+        public Object parentSpanId() {
+            final Object spanId = getParentSpanId();
+            return spanId == null ? 0L : Long.parseLong(spanId.toString());
         }
 
         public Object spanId() {

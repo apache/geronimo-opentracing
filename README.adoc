@@ -23,6 +23,7 @@ NOTE: if you are using Microprofile Config it is used, otherwise it uses system 
 |geronimo.opentracing.client.filter.request.skip|Should client instrumentation be ignored|false
 |geronimo.opentracing.client.filter.request.skipDefaultTags|Should `HTTP_METHOD`, `HTTP_URL` not be added to tags|false
 |geronimo.opentracing.client.filter.request.skipPeerTags|Should `PEER_HOSTNAME`, `PEER_PORT` not be added to tags|false
+|geronimo.opentracing.propagation.headers.parentSpanId|Name of the header used to host the parent spanId value|`X-B3-ParentSpanId`
 |geronimo.opentracing.propagation.headers.spanId|Name of the header used to host the spanId value|`X-B3-SpanId`
 |geronimo.opentracing.propagation.headers.traceId|Name of the header used to host the traceId value|`X-B3-TraceId`
 |geronimo.opentracing.propagation.headers.baggagePrefix|Prefix of headers used to host the baggage values|`baggage-`

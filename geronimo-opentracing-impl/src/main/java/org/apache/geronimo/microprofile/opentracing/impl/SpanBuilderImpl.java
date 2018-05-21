@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 
@@ -37,7 +36,7 @@ import io.opentracing.Tracer;
 
 public class SpanBuilderImpl implements Tracer.SpanBuilder {
 
-    private final Tracer tracer;
+    private final GeronimoTracer tracer;
 
     private final Consumer<SpanImpl> onFinish;
 
@@ -49,18 +48,14 @@ public class SpanBuilderImpl implements Tracer.SpanBuilder {
 
     private final IdGenerator idGenerator;
 
-    private final BiFunction<Object, Map<String, String>, SpanContextImpl> contextFactory;
-
     private boolean ignoreActiveSpan;
 
     private long timestamp = -1;
 
-    public SpanBuilderImpl(final Tracer tracer,
-                           final BiFunction<Object, Map<String, String>, SpanContextImpl> contextFactory,
+    public SpanBuilderImpl(final GeronimoTracer tracer,
                            final Consumer<SpanImpl> onFinish, final String operationName,
                            final IdGenerator idGenerator) {
         this.tracer = tracer;
-        this.contextFactory = contextFactory;
         this.onFinish = onFinish;
         this.operationName = operationName;
         this.idGenerator = idGenerator;
@@ -139,14 +134,9 @@ public class SpanBuilderImpl implements Tracer.SpanBuilder {
                         false))
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
         final SpanContextImpl context = parent == null ?
-                newSpanContext(baggages, idGenerator.next()) :
-                newSpanContext(baggages, parent.getValue().getTraceId());
-        final Object parentId = parent == null ? null : parent.getValue().getSpanId();
-        return new SpanImpl(operationName, timestamp, references, tags, onFinish, context, parentId);
-    }
-
-    private SpanContextImpl newSpanContext(final Map<String, String> baggages, final Object parent) {
-        return contextFactory.apply(parent, baggages);
+                tracer.newContext(idGenerator.next(), null, idGenerator.next(), baggages) :
+                tracer.newContext(parent.getValue().getTraceId(), parent.getValue().getSpanId(), idGenerator.next(), baggages);
+        return new SpanImpl(operationName, timestamp, references, tags, onFinish, context);
     }
 
     @Override

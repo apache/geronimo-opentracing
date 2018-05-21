@@ -24,12 +24,15 @@ public class SpanContextImpl implements SpanContext {
 
     private final Object traceId;
 
+    private final Object parentSpanId;
+
     private final Object spanId;
 
     private final Map<String, String> baggageItems;
 
-    public SpanContextImpl(final Object traceId, final Object spanId, final Map<String, String> baggageItems) {
+    public SpanContextImpl(final Object traceId, final Object parentSpanId, final Object spanId, final Map<String, String> baggageItems) {
         this.traceId = traceId;
+        this.parentSpanId = parentSpanId;
         this.spanId = spanId;
         this.baggageItems = baggageItems;
     }
@@ -40,6 +43,10 @@ public class SpanContextImpl implements SpanContext {
 
     public Object getTraceId() {
         return traceId;
+    }
+
+    public Object getParentSpanId() {
+        return parentSpanId;
     }
 
     public Object getSpanId() {
@@ -55,6 +62,7 @@ public class SpanContextImpl implements SpanContext {
     public String toString() {
         return "SpanContextImpl{" +
                 "traceId=" + traceId +
+                ", parentSpanId=" + parentSpanId +
                 ", spanId=" + spanId +
                 ", baggageItems=" + baggageItems +
                 '}';

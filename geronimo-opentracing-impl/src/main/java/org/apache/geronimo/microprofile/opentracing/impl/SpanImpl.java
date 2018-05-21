@@ -40,8 +40,6 @@ public class SpanImpl implements Span {
 
     private final long startTimestamp;
 
-    private final Object parentId;
-
     private String operationName;
 
     private long finishTimestamp;
@@ -49,13 +47,12 @@ public class SpanImpl implements Span {
     private final Collection<Log> logs = new ArrayList<>();
 
     public SpanImpl(final String operationName, final long startTimestamp, final Collection<ReferenceImpl> references,
-                    final Map<String, Object> tags, final Consumer<SpanImpl> onFinish, final SpanContextImpl context, final Object parentId) {
+                    final Map<String, Object> tags, final Consumer<SpanImpl> onFinish, final SpanContextImpl context) {
         this.operationName = operationName;
         this.startTimestamp = startTimestamp;
         this.references = references;
         this.tags = tags;
         this.context = context;
-        this.parentId = parentId;
         this.onFinish = onFinish;
     }
 
@@ -141,7 +138,6 @@ public class SpanImpl implements Span {
     public String toString() {
         return "SpanImpl{" +
                 " id=" + context.getSpanId() +
-                ", parentId=" + parentId +
                 ", operationName='" + operationName + '\'' +
                 ", references=" + references +
                 ", tags=" + tags +
@@ -160,7 +156,7 @@ public class SpanImpl implements Span {
     }
 
     public Object getParentId() {
-        return parentId;
+        return context.getParentSpanId();
     }
 
     public String getName() {
