@@ -22,8 +22,11 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
+
+import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingConfig;
 
 // this allows to integrate with any backend using appenders.
 @ApplicationScoped
@@ -31,11 +34,17 @@ public class ZipkinLogger {
 
     private final Logger logger = Logger.getLogger(ZipkinLogger.class.getName());
 
+    @Inject
+    private GeronimoOpenTracingConfig config;
+
     private Jsonb jsonb;
+
+    private boolean wrapAsList;
 
     @PostConstruct
     private void init() {
         jsonb = JsonbBuilder.create();
+        wrapAsList = Boolean.parseBoolean(config.read("span.converter.zipkin.logger.wrapAsList", "true"));
     }
 
     @PreDestroy
@@ -48,6 +57,7 @@ public class ZipkinLogger {
     }
 
     public void onZipkinSpan(@Observes final ZipkinSpan zipkinSpan) {
-        logger.info(jsonb.toJson(zipkinSpan));
+        final String json = jsonb.toJson(zipkinSpan);
+        logger.info(wrapAsList ? '[' + json + ']' : json);
     }
 }
