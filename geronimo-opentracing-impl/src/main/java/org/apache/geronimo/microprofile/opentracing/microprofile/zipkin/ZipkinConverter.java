@@ -63,9 +63,9 @@ public class ZipkinConverter {
 
     private ZipkinSpan toZipkin(final SpanImpl span) {
         final ZipkinSpan zipkin = new ZipkinSpan();
-        zipkin.setParentId(Long.class.cast(span.getParentId()));
-        zipkin.setTraceId(Long.class.cast(span.getTraceId()));
-        zipkin.setId(Long.class.cast(span.getId()));
+        zipkin.setParentId(asLong(span.getParentId()));
+        zipkin.setTraceId(asLong(span.getTraceId()));
+        zipkin.setId(asLong(span.getId()));
         zipkin.setName(span.getName());
         zipkin.setKind(ofNullable(span.getKind()).map(s -> s.toUpperCase(ROOT)).orElse(null));
         zipkin.setTimestamp(span.getTimestamp());
@@ -77,6 +77,16 @@ public class ZipkinConverter {
         zipkin.setAnnotations(toAnnotations(endpoint, span));
         zipkin.setBinaryAnnotations(toBinaryAnnotations(endpoint, span.getTags()));
         return zipkin;
+    }
+
+    private long asLong(final Object value) {
+        if (value == null) {
+            return 0;
+        }
+        if (Long.class.isInstance(value)) {
+            return Long.class.cast(value);
+        }
+        return Long.valueOf(String.valueOf(value));
     }
 
     private ZipkinSpan.ZipkinEndpoint toEndpoint(final SpanImpl span) {
