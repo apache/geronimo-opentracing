@@ -180,7 +180,7 @@ public class ZipkinConverter {
                 }
 
                 final ZipkinSpan.ZipkinEndpoint endpoint = new ZipkinSpan.ZipkinEndpoint();
-                endpoint.setServiceName(span.getName());
+                endpoint.setServiceName(serviceName);
                 endpoint.setIpv4(ipv4);
                 endpoint.setIpv6(ipv6);
                 endpoint.setPort(port == null ? 0 : port);
