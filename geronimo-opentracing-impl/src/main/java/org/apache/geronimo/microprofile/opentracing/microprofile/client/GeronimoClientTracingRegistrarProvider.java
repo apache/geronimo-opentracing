@@ -52,8 +52,7 @@ public class GeronimoClientTracingRegistrarProvider implements ClientTracingRegi
             return builder;
         }
         return builder.register(requestFilter).register(responseFilter)
-                // todo: reflection for jersey+resteasy to do the same or PR to support that property
-                .property("executorService" /* cxf */, wrapExecutor(executorService));
+                .executorService(wrapExecutor(executorService));
     }
 
     private ExecutorService wrapExecutor(final ExecutorService executorService) {
