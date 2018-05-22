@@ -16,7 +16,7 @@
  */
 package org.apache.geronimo.microprofile.opentracing.impl;
 
-import java.nio.charset.StandardCharsets;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -29,8 +29,6 @@ import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingCo
 
 @ApplicationScoped
 public class IdGenerator {
-    private static final char[] HEXA_MAPPING = "0123456789abcdef".toCharArray();
-
     @Inject
     private GeronimoOpenTracingConfig config;
 
@@ -55,9 +53,21 @@ public class IdGenerator {
             case "uuid":
                 delegate = () -> UUID.randomUUID().toString();
                 break;
-            case "hex":
+            case "hex": // limited to 16 for the length cause of zipkin (see span decoder)
             default:
-                delegate = () -> toHex(UUID.randomUUID().toString().replace("-", "").getBytes(StandardCharsets.UTF_8));
+                delegate = new Supplier<Object>() {
+                    private final Random random = new Random(System.nanoTime());
+                    private final String constantPart = config.read("id.generator.hex.prefix", "");
+
+                    @Override
+                    public Object get() {
+                        final StringBuilder sb = new StringBuilder(16).append(constantPart);
+                        for (int i = 0; i < 16 - constantPart.length(); i++) {
+                            sb.append(Integer.toHexString(random.nextInt()));
+                        }
+                        return sb.toString();
+                    }
+                };
         }
     }
 
@@ -67,13 +77,5 @@ public class IdGenerator {
 
     public Object next() {
         return delegate.get();
-    }
-
-    private String toHex(final byte[] uuid) {
-        final StringBuilder representation = new StringBuilder(uuid.length * 2);
-        for (final byte current : uuid) {
-            representation.append(HEXA_MAPPING[(current >> 4) & 0xF]).append(HEXA_MAPPING[(current & 0xF)]);
-        }
-        return representation.toString();
     }
 }
