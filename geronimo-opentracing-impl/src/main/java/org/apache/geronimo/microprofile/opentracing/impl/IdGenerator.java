@@ -30,13 +30,13 @@ import org.apache.geronimo.microprofile.opentracing.config.GeronimoOpenTracingCo
 @ApplicationScoped
 public class IdGenerator {
     @Inject
-    private GeronimoOpenTracingConfig config;
+    protected GeronimoOpenTracingConfig config;
 
     private Supplier<Object> delegate;
     private boolean counter;
 
     @PostConstruct
-    private void createDelegate() {
+    void createDelegate() {
         final String type = config.read("id.generator", "counter");
         counter = "counter".equalsIgnoreCase(type);
         switch (type) {
@@ -62,10 +62,10 @@ public class IdGenerator {
                     @Override
                     public Object get() {
                         final StringBuilder sb = new StringBuilder(16).append(constantPart);
-                        for (int i = 0; i < 16 - constantPart.length(); i++) {
+                        while (sb.length() < 16) {
                             sb.append(Integer.toHexString(random.nextInt()));
                         }
-                        return sb.toString();
+                        return sb.length() > 16 ? sb.substring(0, 16) : sb.toString();
                     }
                 };
         }
