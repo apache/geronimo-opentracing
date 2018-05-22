@@ -20,6 +20,7 @@ NOTE: if you are using Microprofile Config it is used, otherwise it uses system 
 |geronimo.opentracing.server.filter.request.skip.<endpoint class>_<endpoint method>|Should server instrumentation be ignored|false
 |geronimo.opentracing.server.filter.request.skip|Should server instrumentation be ignored (if previous is not set)|false
 |geronimo.opentracing.server.filter.request.skipDefaultTags|Should `HTTP_METHOD`, `HTTP_URL` not be added to tags|false
+|geronimo.opentracing.server.filter.request.operationName.usePath|Should the operationName use the `@Path` annotations instead of class names.|false
 |geronimo.opentracing.client.filter.request.skip|Should client instrumentation be ignored|false
 |geronimo.opentracing.client.filter.request.skipDefaultTags|Should `HTTP_METHOD`, `HTTP_URL` not be added to tags|false
 |geronimo.opentracing.client.filter.request.skipPeerTags|Should `PEER_HOSTNAME`, `PEER_PORT` not be added to tags|false

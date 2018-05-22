@@ -25,6 +25,7 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.Path;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
@@ -59,15 +60,35 @@ public class GeronimoOpenTracingFeature implements DynamicFeature {
             return;
         }
 
-        final String operationName = traced.map(Traced::operationName).filter(v -> !v.trim().isEmpty())
-                .orElseGet(() -> Stream.of(resourceInfo.getResourceMethod().getAnnotations())
-                        .filter(a -> a.annotationType().isAnnotationPresent(HttpMethod.class)).findFirst()
-                        .map(a -> a.annotationType().getAnnotation(HttpMethod.class).value()).orElse("") + ':'
-                        + resourceInfo.getResourceClass().getName() + "." + resourceInfo.getResourceMethod().getName());
+        final String operationName = traced.map(Traced::operationName).filter(v -> !v.trim().isEmpty()).orElseGet(() -> {
+            final boolean usePath = Boolean.parseBoolean(config.read("server.filter.request.operationName.usePath", "false"));
+            if (usePath) {
+                final String classPath = ofNullable(resourceInfo.getResourceClass().getAnnotation(Path.class)).map(Path::value)
+                        .orElse("");
+                final String methodPath = ofNullable(resourceInfo.getResourceMethod().getAnnotation(Path.class)).map(Path::value)
+                        .orElse("");
+                return getHttpMethod(resourceInfo) + ':' + classPath
+                        + (!classPath.isEmpty() && !methodPath.isEmpty() && !classPath.endsWith("/") ? "/" : "") + methodPath;
+            }
+            return buildDefaultName(resourceInfo);
+        });
         context.register(new OpenTracingServerResponseFilter())
-                .register(new OpenTracingServerRequestFilter(
-                        operationName, tracer,
-                        Boolean.parseBoolean(config.read("server.filter.request.skip." + resourceInfo.getResourceClass().getName() + "_" + resourceInfo.getResourceMethod().getName(), config.read("server.filter.request.skip", "false"))),
+                .register(new OpenTracingServerRequestFilter(operationName, tracer,
+                        Boolean.parseBoolean(config.read(
+                                "server.filter.request.skip." + resourceInfo.getResourceClass().getName() + "_"
+                                        + resourceInfo.getResourceMethod().getName(),
+                                config.read("server.filter.request.skip", "false"))),
                         Boolean.parseBoolean(config.read("server.filter.request.skipDefaultTags", "false"))));
+    }
+
+    private String buildDefaultName(final ResourceInfo resourceInfo) {
+        return getHttpMethod(resourceInfo) + ':' + resourceInfo.getResourceClass().getName() + "."
+                + resourceInfo.getResourceMethod().getName();
+    }
+
+    private String getHttpMethod(final ResourceInfo resourceInfo) {
+        return Stream.of(resourceInfo.getResourceMethod().getAnnotations())
+                .filter(a -> a.annotationType().isAnnotationPresent(HttpMethod.class)).findFirst()
+                .map(a -> a.annotationType().getAnnotation(HttpMethod.class).value()).orElse("");
     }
 }
