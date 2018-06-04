@@ -57,15 +57,16 @@ public class IdGenerator {
             default:
                 delegate = new Supplier<Object>() {
                     private final Random random = new Random(System.nanoTime());
+                    private final char[] hexDigits = "0123456789abcdef".toCharArray();
                     private final String constantPart = config.read("id.generator.hex.prefix", "");
 
                     @Override
                     public Object get() {
                         final StringBuilder sb = new StringBuilder(16).append(constantPart);
-                        while (sb.length() < 16) {
-                            sb.append(Integer.toHexString(random.nextInt()));
+                        for (int i = 0; i < 16 - constantPart.length(); i++) {
+                            sb.append(hexDigits[random.nextInt(16)]);
                         }
-                        return sb.length() > 16 ? sb.substring(0, 16) : sb.toString();
+                        return sb.toString();
                     }
                 };
         }
