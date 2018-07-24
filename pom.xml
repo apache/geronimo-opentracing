@@ -26,7 +26,7 @@
 
   <groupId>org.apache.geronimo</groupId>
   <artifactId>geronimo-opentracing</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1-SNAPSHOT</version>
   <name>Geronimo OpenTracing</name>
 
   <description>
@@ -37,7 +37,7 @@
     <connection>scm:git:https://gitbox.apache.org/repos/asf/geronimo-opentracing.git</connection>
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/geronimo-opentracing.git</developerConnection>
     <url>https://gitbox.apache.org/repos/asf/geronimo-opentracing.git</url>
-    <tag>geronimo-opentracing-1.0.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <dependencies>
