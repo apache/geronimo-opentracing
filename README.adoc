@@ -28,7 +28,6 @@ NOTE: if you are using Microprofile Config it is used, otherwise it uses system 
 |geronimo.opentracing.propagation.headers.spanId|Name of the header used to host the spanId value|`X-B3-SpanId`
 |geronimo.opentracing.propagation.headers.traceId|Name of the header used to host the traceId value|`X-B3-TraceId`
 |geronimo.opentracing.propagation.headers.baggagePrefix|Prefix of headers used to host the baggage values|`baggage-`
-|geronimo.opentracing.cdi.executorServices.wrappedNames|Name (as CDI names of the beans) of executor services which will get an interceptor propagating the current scope (span)|-
 |geronimo.opentracing.id.generator|`counter` (to generate longs), `uuid` (to generate random uuids) or `hex` (to use the hexa representation of the uuid generator). Specifies which kind of trace and span id are in use.|counter
 |geronimo.opentracing.id.generator.hex.prefix|For hex generator, a prefix to prepend to all ids.|-
 |geronimo.opentracing.span.converter.zipkin.active|Should spans converted to a zipkin representation. True until there is a standard opentracing format.|true
@@ -36,3 +35,7 @@ NOTE: if you are using Microprofile Config it is used, otherwise it uses system 
 |geronimo.opentracing.span.converter.zipkin.logger.active|Should a logger named `org.apache.geronimo.opentracing.zipkin` log each span as a Zipkin JSON. This allows to use a logger implementation to push the spans to any backend (like log4j2 kafka appender). It uses JUL as a facade.|true
 |geronimo.opentracing.span.converter.zipkin.logger.wrapAsList|Should zipkin JSON be logged wrapped in a list.|true
 |===
+
+== ExecutorServices
+
+To monitor a CDI executor service, you can decorate it with `@TracedExecutorService`.

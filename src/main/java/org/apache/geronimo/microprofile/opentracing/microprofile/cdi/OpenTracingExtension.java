@@ -16,14 +16,9 @@
  */
 package org.apache.geronimo.microprofile.opentracing.microprofile.cdi;
 
-import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.toSet;
-
 import java.lang.reflect.Type;
-import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -50,8 +45,6 @@ public class OpenTracingExtension implements Extension {
 
     private GeronimoOpenTracingConfig config;
 
-    private Collection<String> instrumentedExecutorServices;
-
     private boolean useZipkin;
     private boolean useZipkinLogger;
 
@@ -59,8 +52,6 @@ public class OpenTracingExtension implements Extension {
         config = GeronimoOpenTracingConfig.create();
         useZipkin = Boolean.parseBoolean(config.read("span.converter.zipkin.active", "true"));
         useZipkinLogger = useZipkin && Boolean.parseBoolean(config.read("span.converter.zipkin.logger.active", "true"));
-        instrumentedExecutorServices = ofNullable(config.read("cdi.executorServices.wrappedNames", null))
-                .map(s -> Stream.of(s.split(",")).map(String::trim).filter(it -> !it.isEmpty()).collect(toSet())).orElse(null);
     }
 
     void zipkinConverterToggle(@Observes final ProcessAnnotatedType<ZipkinConverter> onZipkinConverter) {
