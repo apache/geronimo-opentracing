@@ -4,9 +4,13 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -30,6 +34,7 @@ import org.apache.geronimo.microprofile.opentracing.common.impl.ServletHeaderTex
 import org.apache.geronimo.microprofile.opentracing.common.spi.Container;
 
 import io.opentracing.Scope;
+import io.opentracing.ScopeManager;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
@@ -38,7 +43,7 @@ import io.opentracing.tag.Tags;
 public class OpenTracingFilter implements Filter {
     private Tracer tracer;
     private GeronimoOpenTracingConfig config;
-    private ScopeManagerImpl manager;
+    private ScopeManager manager;
     private Container container;
 
     private Collection<Predicate<String>> forcedUrls;
@@ -46,6 +51,7 @@ public class OpenTracingFilter implements Filter {
     private List<Predicate<String>> skipUrls;
 
     private boolean skipDefaultTags;
+    private boolean forceStackLog;
 
     public void setTracer(final Tracer tracer) {
         this.tracer = tracer;
@@ -55,7 +61,7 @@ public class OpenTracingFilter implements Filter {
         this.config = config;
     }
 
-    public void setManager(final ScopeManagerImpl manager) {
+    public void setManager(final ScopeManager manager) {
         this.manager = manager;
     }
 
@@ -72,12 +78,13 @@ public class OpenTracingFilter implements Filter {
             tracer = container.lookup(Tracer.class);
         }
         if (manager == null) {
-            manager = container.lookup(ScopeManagerImpl.class);
+            manager = container.lookup(ScopeManager.class);
         }
         if (config == null) {
             config = container.lookup(GeronimoOpenTracingConfig.class);
         }
         skipDefaultTags = Boolean.parseBoolean(config.read("filter.forcedTracing.skipDefaultTags", "false"));
+        forceStackLog = Boolean.parseBoolean(config.read("filter.error.forceStackLog", "false"));
         forcedUrls = ofNullable(config.read("filter.forcedTracing.urls", null))
                 .map(String::trim).filter(v -> !v.isEmpty())
                 .map(v -> toMatchingPredicates(v, "forcedTracing"))
@@ -153,14 +160,13 @@ public class OpenTracingFilter implements Filter {
                         final Span span = scope.span();
                         Tags.HTTP_STATUS.set(span,
                                 status == HttpServletResponse.SC_OK ? HttpServletResponse.SC_INTERNAL_SERVER_ERROR : status);
-                        Tags.ERROR.set(span, true);
-                        span.log(new HashMap<String, Object>() {
-
-                            {
-                                put("event", Tags.ERROR.getKey());
-                                put("event.object", ex);
-                            }
-                        });
+                        if (forceStackLog) {
+                            Tags.ERROR.set(span, true);
+                            final Map<String, Object> logs = new LinkedHashMap<>();
+                            logs.put("event", Tags.ERROR.getKey());
+                            logs.put("error.object", ex);
+                            span.log(logs);
+                        }
                     });
             throw ex;
         } finally {
@@ -188,7 +194,17 @@ public class OpenTracingFilter implements Filter {
                             // no-op
                         }
                     });
-                    manager.clear();
+
+                    ScopeManager managerImpl = manager;
+                    if (!ScopeManagerImpl.class.isInstance(managerImpl) && Proxy.isProxyClass(manager.getClass())) {
+                        final InvocationHandler handler = Proxy.getInvocationHandler(manager);
+                        if (Container.Unwrappable.class.isInstance(handler)) {
+                            managerImpl = ScopeManager.class.cast(Container.Unwrappable.class.cast(handler).unwrap());
+                        }
+                    }
+                    if (ScopeManagerImpl.class.isInstance(managerImpl)) {
+                        ScopeManagerImpl.class.cast(managerImpl).clear();
+                    }
                 } else {
                     scope.close();
                 }

@@ -36,10 +36,15 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 
 import org.apache.geronimo.microprofile.opentracing.common.config.GeronimoOpenTracingConfig;
+import org.apache.geronimo.microprofile.opentracing.common.impl.IdGenerator;
+import org.apache.geronimo.microprofile.opentracing.common.microprofile.client.OpenTracingClientRequestFilter;
+import org.apache.geronimo.microprofile.opentracing.common.microprofile.client.OpenTracingClientResponseFilter;
 import org.apache.geronimo.microprofile.opentracing.common.microprofile.thread.OpenTracingExecutorService;
 import org.apache.geronimo.microprofile.opentracing.microprofile.zipkin.CdiZipkinConverter;
 import org.apache.geronimo.microprofile.opentracing.microprofile.zipkin.CdiZipkinLogger;
 import org.eclipse.microprofile.opentracing.Traced;
+
+import io.opentracing.ScopeManager;
 
 public class OpenTracingExtension implements Extension {
 
@@ -52,6 +57,41 @@ public class OpenTracingExtension implements Extension {
         config = GeronimoOpenTracingConfig.create();
         useZipkin = Boolean.parseBoolean(config.read("span.converter.zipkin.active", "true"));
         useZipkinLogger = useZipkin && Boolean.parseBoolean(config.read("span.converter.zipkin.logger.active", "true"));
+    }
+
+    void vetoDefaultConfigIfScanned(@Observes final ProcessAnnotatedType<GeronimoOpenTracingConfig> config) {
+        if (config.getAnnotatedType().getJavaClass().getName()
+                  .equals("org.apache.geronimo.microprofile.opentracing.common.config.DefaultOpenTracingConfig")) {
+            config.veto();
+        }
+    }
+
+    void vetoDefaultScopeManagerIfScanned(@Observes final ProcessAnnotatedType<ScopeManager> manager) {
+        if (manager.getAnnotatedType().getJavaClass().getName()
+                  .equals("org.apache.geronimo.microprofile.opentracing.common.impl.ScopeManagerImpl")) {
+            manager.veto();
+        }
+    }
+
+    void vetoDefaultIdGeneratorIfScanned(@Observes final ProcessAnnotatedType<IdGenerator> generator) {
+        if (generator.getAnnotatedType().getJavaClass().getName()
+                  .equals("org.apache.geronimo.microprofile.opentracing.common.impl.IdGenerator")) {
+            generator.veto();
+        }
+    }
+
+    void vetoClientRequestTracingIfScanned(@Observes final ProcessAnnotatedType<OpenTracingClientRequestFilter> clientFilter) {
+        if (clientFilter.getAnnotatedType().getJavaClass().getName()
+                  .equals("org.apache.geronimo.microprofile.opentracing.common.microprofile.client.OpenTracingClientRequestFilter")) {
+            clientFilter.veto();
+        }
+    }
+
+    void vetoClientResponseTracingIfScanned(@Observes final ProcessAnnotatedType<OpenTracingClientResponseFilter> clientFilter) {
+        if (clientFilter.getAnnotatedType().getJavaClass().getName()
+                  .equals("org.apache.geronimo.microprofile.opentracing.common.microprofile.client.OpenTracingClientResponseFilter")) {
+            clientFilter.veto();
+        }
     }
 
     void zipkinConverterToggle(@Observes final ProcessAnnotatedType<CdiZipkinConverter> onZipkinConverter) {

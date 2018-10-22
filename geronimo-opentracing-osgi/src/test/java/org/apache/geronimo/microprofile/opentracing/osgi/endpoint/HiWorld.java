@@ -14,24 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.geronimo.microprofile.opentracing.common.spi;
+package org.apache.geronimo.microprofile.opentracing.osgi.endpoint;
 
-import java.util.Iterator;
-import java.util.ServiceLoader;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 
-public interface Container {
-    <T> T lookup(Class<T> type);
-
-    static Container get() {
-        final Iterator<Container> iterator = ServiceLoader.load(Container.class).iterator();
-        if (!iterator.hasNext()) {
-            throw new IllegalArgumentException("No implementation of Container found");
-        }
-        return iterator.next();
-    }
-
-    @FunctionalInterface
-    interface Unwrappable {
-        Object unwrap();
+@Path("hi")
+public class HiWorld {
+    @GET
+    public String get() {
+        return "world";
     }
 }

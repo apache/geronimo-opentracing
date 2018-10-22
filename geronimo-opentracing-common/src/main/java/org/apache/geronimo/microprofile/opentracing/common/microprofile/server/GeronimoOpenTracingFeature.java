@@ -17,8 +17,13 @@
 package org.apache.geronimo.microprofile.opentracing.common.microprofile.server;
 
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import javax.ws.rs.HttpMethod;
@@ -40,6 +45,7 @@ public class GeronimoOpenTracingFeature implements DynamicFeature {
     private Tracer tracer;
     private GeronimoOpenTracingConfig config;
     private Container container;
+    private Collection<Pattern> skipPatterns;
 
     public void setTracer(final Tracer tracer) {
         this.tracer = tracer;
@@ -64,22 +70,32 @@ public class GeronimoOpenTracingFeature implements DynamicFeature {
         if (config == null) {
             config = container.lookup(GeronimoOpenTracingConfig.class);
         }
+        if (skipPatterns == null) {
+            skipPatterns = ofNullable(config.read("mp.opentracing.server.skip-pattern", null))
+                .map(it -> Stream.of(it.split("\\|")).map(String::trim).filter(p -> !p.isEmpty()).map(Pattern::compile).collect(toList()))
+                .orElseGet(Collections::emptyList);
+        }
 
         final Optional<Traced> traced = ofNullable(ofNullable(resourceInfo.getResourceMethod().getAnnotation(Traced.class))
                 .orElseGet(() -> resourceInfo.getResourceClass().getAnnotation(Traced.class)));
         if (!traced.map(Traced::value).orElse(true)) {
             return;
         }
+        final String path = Stream.of(
+                ofNullable(resourceInfo.getResourceClass().getAnnotation(Path.class)).map(Path::value).orElse(""),
+                ofNullable(resourceInfo.getResourceMethod().getAnnotation(Path.class)).map(Path::value).orElse(""))
+                .map(it -> it.substring(it.startsWith("/") ? 1 : 0, it.endsWith("/") ? it.length() - 1 : it.length()))
+                .filter(it -> !it.isEmpty())
+                .collect(joining("/", "/", ""));
+        if (skipPatterns.stream().anyMatch(it -> it.matcher(path).matches())) {
+            return;
+        }
 
         final String operationName = traced.map(Traced::operationName).filter(v -> !v.trim().isEmpty()).orElseGet(() -> {
-            final boolean usePath = Boolean.parseBoolean(config.read("server.filter.request.operationName.usePath", "false"));
-            if (usePath) {
-                final String classPath = ofNullable(resourceInfo.getResourceClass().getAnnotation(Path.class)).map(Path::value)
-                        .orElse("");
-                final String methodPath = ofNullable(resourceInfo.getResourceMethod().getAnnotation(Path.class)).map(Path::value)
-                        .orElse("");
-                return getHttpMethod(resourceInfo) + ':' + classPath
-                        + (!classPath.isEmpty() && !methodPath.isEmpty() && !classPath.endsWith("/") ? "/" : "") + methodPath;
+            if (Boolean.parseBoolean(config.read("server.filter.request.operationName.usePath", "false"))) {
+                return getHttpMethod(resourceInfo) + ':' + getMethodPath(resourceInfo);
+            } else if ("http-path".equals(config.read("mp.opentracing.server.operation-name-provider", null))) {
+                return getMethodPath(resourceInfo);
             }
             return buildDefaultName(resourceInfo);
         });
@@ -90,6 +106,17 @@ public class GeronimoOpenTracingFeature implements DynamicFeature {
                                         + resourceInfo.getResourceMethod().getName(),
                                 config.read("server.filter.request.skip", "false"))),
                         Boolean.parseBoolean(config.read("server.filter.request.skipDefaultTags", "false"))));
+    }
+
+    private String getMethodPath(final ResourceInfo resourceInfo) {
+        final String classPath = ofNullable(resourceInfo.getResourceClass().getAnnotation(Path.class))
+                .map(Path::value).orElse("");
+        final String methodPath = ofNullable(resourceInfo.getResourceMethod().getAnnotation(Path.class))
+                .map(Path::value).orElse("");
+        return Stream.of(classPath, methodPath)
+                     .map(it -> it.substring(it.startsWith("/") ? 1 : 0, it.length() - (it.endsWith("/") ? 1 : 0)))
+                     .filter(it -> !it.isEmpty())
+                     .collect(joining("/", "/", ""));
     }
 
     private String buildDefaultName(final ResourceInfo resourceInfo) {

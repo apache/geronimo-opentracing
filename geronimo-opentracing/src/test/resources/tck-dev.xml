@@ -16,11 +16,10 @@
     limitations under the License.
 -->
 <suite name="microprofile-opentracing-TCK" verbose="2" configfailurepolicy="continue">
-  <test name="microprofile-opentracing 1.0 TCK">
+  <test name="microprofile-opentracing TCK">
     <classes>
-      <class name="org.eclipse.microprofile.opentracing.tck.OpentracingClientTests">
+      <class name="org.eclipse.microprofile.opentracing.tck.OpenTracingHTTPPathNameTests">
         <methods>
-          <include name="testMultithreadedNestedSpans"/>
         </methods>
       </class>
     </classes>

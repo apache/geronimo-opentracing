@@ -14,24 +14,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.geronimo.microprofile.opentracing.common.spi;
-
-import java.util.Iterator;
-import java.util.ServiceLoader;
-
-public interface Container {
-    <T> T lookup(Class<T> type);
-
-    static Container get() {
-        final Iterator<Container> iterator = ServiceLoader.load(Container.class).iterator();
-        if (!iterator.hasNext()) {
-            throw new IllegalArgumentException("No implementation of Container found");
-        }
-        return iterator.next();
-    }
-
-    @FunctionalInterface
-    interface Unwrappable {
-        Object unwrap();
-    }
-}
+package org.apache.geronimo.microprofile.opentracing.osgi;

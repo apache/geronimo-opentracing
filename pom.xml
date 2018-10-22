@@ -45,7 +45,7 @@
     <dependency>
       <groupId>org.eclipse.microprofile.opentracing</groupId>
       <artifactId>microprofile-opentracing-api</artifactId>
-      <version>1.1</version>
+      <version>1.2</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -92,10 +92,17 @@
   <modules>
     <module>geronimo-opentracing-common</module>
     <module>geronimo-opentracing</module>
+    <module>geronimo-opentracing-osgi</module>
   </modules>
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>4.1.0</version>
+        <extensions>true</extensions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+
+      Licensed to the Apache Software Foundation (ASF) under one or more
+      contributor license agreements.  See the NOTICE file distributed with
+      this work for additional information regarding copyright ownership.
+      The ASF licenses this file to You under the Apache License, Version 2.0
+      (the "License"); you may not use this file except in compliance with
+      the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+-->
+<features name="test-1.0.0"
+          xmlns="http://karaf.apache.org/xmlns/features/v1.3.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="
+            http://karaf.apache.org/xmlns/features/v1.3.0
+            http://karaf.apache.org/xmlns/features/v1.3.0">
+  <repository>mvn:org.ops4j.pax.cdi/pax-cdi-features/1.0.0/xml/features</repository>
+
+  <feature name="test" version="1.0.0" description="Test setup">
+    <feature prerequisite="true">wrap</feature>
+    <feature prerequisite="true">http-whiteboard</feature>
+    <!-- todo placeholders -->
+    <bundle>mvn:org.apache.servicemix.specs:org.apache.servicemix.specs.jaxrs-api-2.1:2.9.1</bundle>
+    <bundle>wrap:mvn:io.opentracing/opentracing-api/0.31.0</bundle>
+    <bundle>mvn:http://repo.apache.maven.org/maven2/!org.eclipse.microprofile.opentracing:microprofile-opentracing-api:1.1</bundle>
+    <bundle start="true">mvn:org.apache.aries.jax.rs/org.apache.aries.jax.rs.whiteboard/1.0.1</bundle>
+  </feature>
+</features>

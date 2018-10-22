@@ -18,7 +18,6 @@ package org.apache.geronimo.microprofile.opentracing.common.microprofile.zipkin;
 
 import java.util.logging.Logger;
 
-import javax.inject.Inject;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 
@@ -31,7 +30,6 @@ public class ZipkinLogger implements Listener<ZipkinSpan> {
 
     private final Logger spanLogger = Logger.getLogger("org.apache.geronimo.opentracing.zipkin");
 
-    @Inject
     private GeronimoOpenTracingConfig config;
 
     private Jsonb jsonb;
@@ -51,6 +49,10 @@ public class ZipkinLogger implements Listener<ZipkinSpan> {
             jsonb = JsonbBuilder.create();
         }
         wrapAsList = Boolean.parseBoolean(config.read("span.converter.zipkin.logger.wrapAsList", "true"));
+    }
+
+    public Jsonb getJsonb() {
+        return jsonb;
     }
 
     public void destroy() {

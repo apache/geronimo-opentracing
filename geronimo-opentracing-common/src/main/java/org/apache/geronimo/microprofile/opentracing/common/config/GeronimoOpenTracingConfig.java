@@ -55,8 +55,7 @@ public interface GeronimoOpenTracingConfig {
 
     static GeronimoOpenTracingConfig create() {
         try {
-            final Iterator<GeronimoOpenTracingConfig> iterator = ServiceLoader.load(GeronimoOpenTracingConfig.class)
-                                                                              .iterator();
+            final Iterator<GeronimoOpenTracingConfig> iterator = ServiceLoader.load(GeronimoOpenTracingConfig.class).iterator();
             if (iterator.hasNext()) {
                 return new PrefixedConfig(iterator.next());
             }

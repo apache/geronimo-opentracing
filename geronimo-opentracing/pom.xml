@@ -45,6 +45,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-atinject_1.0_spec</artifactId>
+      <version>1.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.apache.geronimo</groupId>
       <artifactId>geronimo-opentracing-common</artifactId>
       <version>${project.version}</version>
@@ -61,7 +67,7 @@
     <dependency>
       <groupId>org.apache.openwebbeans</groupId>
       <artifactId>openwebbeans-impl</artifactId>
-      <version>2.0.5</version>
+      <version>2.0.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -73,7 +79,7 @@
     <dependency>
       <groupId>org.apache.meecrowave</groupId>
       <artifactId>meecrowave-arquillian</artifactId>
-      <version>1.2.1</version>
+      <version>1.2.3</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -85,7 +91,7 @@
     <dependency>
       <groupId>org.eclipse.microprofile.opentracing</groupId>
       <artifactId>microprofile-opentracing-tck</artifactId>
-      <version>1.1</version>
+      <version>1.2</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -109,6 +115,12 @@
           <artifactId>resteasy-jackson-provider</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.geronimo.config</groupId>
+      <artifactId>geronimo-config-impl</artifactId>
+      <version>1.2</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

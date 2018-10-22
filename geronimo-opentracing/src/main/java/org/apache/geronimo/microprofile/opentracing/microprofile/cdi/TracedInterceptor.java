@@ -16,10 +16,14 @@
  */
 package org.apache.geronimo.microprofile.opentracing.microprofile.cdi;
 
+import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -37,7 +41,9 @@ import javax.interceptor.InvocationContext;
 import org.eclipse.microprofile.opentracing.Traced;
 
 import io.opentracing.Scope;
+import io.opentracing.Span;
 import io.opentracing.Tracer;
+import io.opentracing.tag.Tags;
 
 @Traced
 @Interceptor
@@ -81,8 +87,24 @@ public class TracedInterceptor implements Serializable {
         if (parent != null) {
             spanBuilder.asChildOf(parent.span());
         }
-        try (final Scope scope = spanBuilder.startActive(true)) {
+        Scope scope = null;
+        try {
+            scope = spanBuilder.startActive(true);
             return context.proceed();
+        } catch (final RuntimeException re) {
+            if (scope != null) {
+                final Span span = scope.span();
+                Tags.ERROR.set(span, true);
+                final Map<String, Object> logs = new LinkedHashMap<>();
+                logs.put("event", Tags.ERROR.getKey());
+                logs.put("error.object", re);
+                span.log(logs);
+            }
+            throw re;
+        } finally {
+            if (scope != null) {
+                scope.close();
+            }
         }
     }
 
