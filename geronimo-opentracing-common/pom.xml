@@ -30,8 +30,20 @@
   <artifactId>geronimo-opentracing-common</artifactId>
   <name>Geronimo OpenTracing :: Common</name>
   <description>Implementation environment independent (no CDI).</description>
+  <packaging>bundle</packaging>
 
   <properties>
     <geronimo-opentracing.Automatic-Module-Name>org.apache.geronimo.opentracing.common</geronimo-opentracing.Automatic-Module-Name>
   </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>4.0.0</version>
+        <extensions>true</extensions>
+      </plugin>
+    </plugins>
+  </build>
 </project>
