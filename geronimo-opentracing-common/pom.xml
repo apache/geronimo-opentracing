@@ -35,4 +35,32 @@
   <properties>
     <geronimo-opentracing.Automatic-Module-Name>org.apache.geronimo.opentracing.common</geronimo-opentracing.Automatic-Module-Name>
   </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <configuration>
+          <instructions>
+            <Export-Package>org.apache.geronimo.microprofile.opentracing.common.*</Export-Package>
+            <Import-Package>
+              io.opentracing,io.opentracing.propagation,
+              io.opentracing.tag,
+              javax.annotation;version="[1.0,3)",
+              javax.json.bind;version="[1.0,3)";resolution:=optional,
+              javax.servlet,
+              javax.servlet.http,
+              javax.ws.rs;version="[2,3)",
+              javax.ws.rs.client;version="[2,3)",
+              javax.ws.rs.container;version="[2,3)",
+              javax.ws.rs.core;version="[2,3)",
+              javax.ws.rs.ext;version="[2,3)",
+              *
+            </Import-Package>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

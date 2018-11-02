@@ -25,12 +25,25 @@
   <repository>mvn:org.ops4j.pax.cdi/pax-cdi-features/1.0.0/xml/features</repository>
 
   <feature name="test" version="1.0.0" description="Test setup">
+    <!-- base -->
     <feature prerequisite="true">wrap</feature>
     <feature prerequisite="true">http-whiteboard</feature>
-    <!-- todo placeholders -->
-    <bundle>mvn:org.apache.servicemix.specs:org.apache.servicemix.specs.jaxrs-api-2.1:2.9.1</bundle>
-    <bundle>wrap:mvn:io.opentracing/opentracing-api/0.31.0</bundle>
-    <bundle>mvn:http://repo.apache.maven.org/maven2/!org.eclipse.microprofile.opentracing:microprofile-opentracing-api:1.1</bundle>
-    <bundle start="true">mvn:org.apache.aries.jax.rs/org.apache.aries.jax.rs.whiteboard/1.0.1</bundle>
+    <bundle>mvn:org.apache.felix/org.apache.felix.eventadmin/1.5.0</bundle>
+
+    <!-- cause MP spec OSGi constraints are not strict enough it leaks that -->
+    <bundle>mvn:javax.interceptor/javax.interceptor-api/1.2</bundle>
+    <bundle>mvn:javax.enterprise/cdi-api/1.2</bundle>
+
+    <!-- spec API -->
+    <bundle>mvn:org.apache.servicemix.specs/org.apache.servicemix.specs.jaxrs-api-2.1/2.9.1</bundle>
+    <bundle>wrap:mvn:io.opentracing/opentracing-api/${opentracing-api.version}</bundle>
+    <bundle>mvn:org.eclipse.microprofile.opentracing/microprofile-opentracing-api/${microprofile-opentracing-api.version}</bundle>
+
+    <!-- implementations + needed specs -->
+    <bundle>mvn:org.apache.geronimo.specs/geronimo-json_1.1_spec/1.1</bundle>
+    <bundle>mvn:org.apache.geronimo.specs/geronimo-jsonb_1.0_spec/1.1</bundle>
+    <bundle>mvn:org.apache.johnzon/johnzon-core/${johnzon.version}</bundle>
+    <bundle>mvn:org.apache.johnzon/johnzon-mapper/${johnzon.version}</bundle>
+    <bundle>mvn:org.apache.johnzon/johnzon-jsonb/${johnzon.version}</bundle>
   </feature>
 </features>

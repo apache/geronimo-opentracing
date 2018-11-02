@@ -17,6 +17,7 @@
 package org.apache.geronimo.microprofile.opentracing.osgi;
 
 import static java.util.Collections.singletonMap;
+import static java.util.Optional.ofNullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,7 +59,7 @@ import io.opentracing.ScopeManager;
 import io.opentracing.Tracer;
 
 public class OpenTracingActivator implements BundleActivator {
-    // not sure we can avoid that :(
+    // not sure we can avoid that cause of client side :(
     static final Map<Class<?>, Tracked<?>> INSTANCES = new HashMap<>();
 
     private final Collection<ServiceRegistration<?>> registrations = new ArrayList<>();
@@ -88,17 +89,15 @@ public class OpenTracingActivator implements BundleActivator {
         tracer.setConfig(config);
         tracer.setIdGenerator(idGenerator);
         tracer.setScopeManager(scopeManager);
-        tracer.setFinishedSpanEvent(span -> container
-                .lookup(EventAdmin.class)
-                .postEvent(new Event("geronimo/microprofile/opentracing/finishedSpan", singletonMap("span", span))));
+        tracer.setFinishedSpanEvent(span -> ofNullable(container.lookup(EventAdmin.class)).ifPresent(ea ->
+                ea.sendEvent(new Event("geronimo/microprofile/opentracing/finishedSpan", singletonMap("span", span)))));
         tracer.init();
 
         final ZipkinConverter zipkinConverter = new ZipkinConverter();
         zipkinConverter.setConfig(config);
         zipkinConverter.setIdGenerator(idGenerator);
-        zipkinConverter.setZipkinSpanEvent(span -> container
-                .lookup(EventAdmin.class)
-                .postEvent(new Event("geronimo/microprofile/opentracing/zipkinSpan", singletonMap("span", span))));
+        zipkinConverter.setZipkinSpanEvent(span -> ofNullable(container.lookup(EventAdmin.class)).ifPresent(ea ->
+                ea.sendEvent(new Event("geronimo/microprofile/opentracing/zipkinSpan", singletonMap("span", span)))));
         zipkinConverter.init();
 
         logger = new ZipkinLogger();

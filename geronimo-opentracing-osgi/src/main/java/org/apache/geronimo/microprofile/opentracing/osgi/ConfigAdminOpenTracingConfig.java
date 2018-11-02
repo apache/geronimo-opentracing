@@ -29,6 +29,7 @@ public class ConfigAdminOpenTracingConfig implements GeronimoOpenTracingConfig {
 
     public ConfigAdminOpenTracingConfig() {
         ofNullable(OpenTracingActivator.INSTANCES.get(ConfigurationAdmin.class))
+                .map(OpenTracingActivator.Tracked::getInstance)
                 .map(ConfigurationAdmin.class::cast)
                 .ifPresent(admin -> {
                     try {
