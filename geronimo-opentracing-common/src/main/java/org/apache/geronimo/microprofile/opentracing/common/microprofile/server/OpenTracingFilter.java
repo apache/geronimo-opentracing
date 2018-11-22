@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -155,19 +156,7 @@ public class OpenTracingFilter implements Filter {
         try {
             chain.doFilter(request, response);
         } catch (final Exception ex) {
-            getCurrentScope(request).ifPresent(scope -> {
-                        final int status = HttpServletResponse.class.cast(response).getStatus();
-                        final Span span = scope.span();
-                        Tags.HTTP_STATUS.set(span,
-                                status == HttpServletResponse.SC_OK ? HttpServletResponse.SC_INTERNAL_SERVER_ERROR : status);
-                        if (forceStackLog) {
-                            Tags.ERROR.set(span, true);
-                            final Map<String, Object> logs = new LinkedHashMap<>();
-                            logs.put("event", Tags.ERROR.getKey());
-                            logs.put("error.object", ex);
-                            span.log(logs);
-                        }
-                    });
+            getCurrentScope(request).ifPresent(scope -> onError(response, ex, scope));
             throw ex;
         } finally {
             getCurrentScope(request).ifPresent(scope -> {
@@ -181,12 +170,15 @@ public class OpenTracingFilter implements Filter {
 
                         @Override
                         public void onTimeout(final AsyncEvent event) {
-                            // no-op
+                            OpenTracingFilter.this.onError(
+                                    event.getSuppliedResponse(),
+                                    ofNullable(event.getThrowable()).orElseGet(TimeoutException::new),
+                                    scope);
                         }
 
                         @Override
                         public void onError(final AsyncEvent event) {
-                            // no-op
+                            OpenTracingFilter.this.onError(event.getSuppliedResponse(), event.getThrowable(), scope);
                         }
 
                         @Override
@@ -209,6 +201,20 @@ public class OpenTracingFilter implements Filter {
                     scope.close();
                 }
             });
+        }
+    }
+
+    private void onError(final ServletResponse response, final Throwable ex, final Scope scope) {
+        final int status = HttpServletResponse.class.cast(response).getStatus();
+        final Span span = scope.span();
+        Tags.HTTP_STATUS.set(span,
+                status == HttpServletResponse.SC_OK ? HttpServletResponse.SC_INTERNAL_SERVER_ERROR : status);
+        if (forceStackLog) {
+            Tags.ERROR.set(span, true);
+            final Map<String, Object> logs = new LinkedHashMap<>();
+            logs.put("event", Tags.ERROR.getKey());
+            logs.put("error.object", ex);
+            span.log(logs);
         }
     }
 
