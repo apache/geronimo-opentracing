@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache.geronimo</groupId>
     <artifactId>geronimo-opentracing-parent</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>geronimo-opentracing</artifactId>
