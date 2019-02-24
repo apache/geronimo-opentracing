@@ -102,9 +102,9 @@ public class GeronimoOpenTracingFeature implements DynamicFeature {
         context.register(new OpenTracingServerResponseFilter())
                 .register(new OpenTracingServerRequestFilter(operationName, tracer,
                         Boolean.parseBoolean(config.read(
-                                "server.filter.request.skip." + resourceInfo.getResourceClass().getName() + "_"
-                                        + resourceInfo.getResourceMethod().getName(),
-                                config.read("server.filter.request.skip", "false"))),
+                                "server.filter.request.skip." + resourceInfo.getResourceClass().getName() + "_" + resourceInfo.getResourceMethod().getName(),
+                                config.read("server.filter.request.skip." + resourceInfo.getResourceClass().getName(),
+                                        config.read("server.filter.request.skip", "false")))),
                         Boolean.parseBoolean(config.read("server.filter.request.skipDefaultTags", "false"))));
     }
 
