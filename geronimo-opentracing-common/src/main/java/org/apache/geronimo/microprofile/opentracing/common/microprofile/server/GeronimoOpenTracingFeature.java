@@ -46,6 +46,8 @@ public class GeronimoOpenTracingFeature implements DynamicFeature {
     private GeronimoOpenTracingConfig config;
     private Container container;
     private Collection<Pattern> skipPatterns;
+    private String globalFilterRequestSkip;
+    private boolean globalIgnoreMetadataResources;
 
     public void setTracer(final Tracer tracer) {
         this.tracer = tracer;
@@ -53,6 +55,8 @@ public class GeronimoOpenTracingFeature implements DynamicFeature {
 
     public void setConfig(final GeronimoOpenTracingConfig config) {
         this.config = config;
+        this.globalFilterRequestSkip = config.read("server.filter.request.skip", "false");
+        this.globalIgnoreMetadataResources = Boolean.parseBoolean(config.read("server.filter.request.ignoreMetadaResources", "true"));
     }
 
     public void setContainer(final Container container) {
@@ -101,11 +105,26 @@ public class GeronimoOpenTracingFeature implements DynamicFeature {
         });
         context.register(new OpenTracingServerResponseFilter())
                 .register(new OpenTracingServerRequestFilter(operationName, tracer,
-                        Boolean.parseBoolean(config.read(
-                                "server.filter.request.skip." + resourceInfo.getResourceClass().getName() + "_" + resourceInfo.getResourceMethod().getName(),
-                                config.read("server.filter.request.skip." + resourceInfo.getResourceClass().getName(),
-                                        config.read("server.filter.request.skip", "false")))),
+                        shouldSkip(resourceInfo),
                         Boolean.parseBoolean(config.read("server.filter.request.skipDefaultTags", "false"))));
+    }
+
+    private boolean shouldSkip(final ResourceInfo resourceInfo) {
+        if (Boolean.parseBoolean(config.read(
+                "server.filter.request.skip." + resourceInfo.getResourceClass().getName() + "_" + resourceInfo.getResourceMethod().getName(),
+                config.read("server.filter.request.skip." + resourceInfo.getResourceClass().getName(),
+                        globalFilterRequestSkip)))) {
+            return true;
+        }
+        return globalIgnoreMetadataResources && isMetadataResource(resourceInfo.getResourceClass().getName());
+    }
+
+    private boolean isMetadataResource(final String name) {
+        return name.startsWith("org.apache.geronimo.microprofile.openapi.jaxrs.") ||
+                name.startsWith("org.apache.geronimo.microprofile.metrics.jaxrs.") ||
+                name.startsWith("org.apache.geronimo.microprofile.impl.health.jaxrs.") ||
+                name.startsWith("org.apache.geronimo.microprofile.reporter.storage.front.") ||
+                name.startsWith("org.microprofileext.openapi.swaggerui.");
     }
 
     private String getMethodPath(final ResourceInfo resourceInfo) {
