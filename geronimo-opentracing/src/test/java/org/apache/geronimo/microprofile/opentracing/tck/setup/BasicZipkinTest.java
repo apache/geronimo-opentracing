@@ -53,7 +53,9 @@ public class BasicZipkinTest extends Arquillian {
      */
     @Test
     @RunAsClient
-    private void testWildcard() throws InterruptedException {
+    private void testSimpleService() throws InterruptedException {
+
+        zipkin.httpUrl()
 
 
         /*
