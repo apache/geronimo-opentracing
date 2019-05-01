@@ -148,7 +148,7 @@ public class OpenTracingFilter implements Filter {
         if (skipUrls != null && !skipUrls.isEmpty()) {
             final HttpServletRequest req = HttpServletRequest.class.cast(request);
             final String matching = req.getRequestURI().substring(req.getContextPath().length());
-            if (forcedUrls.stream().anyMatch(p -> p.test(matching))) {
+            if (skipUrls.stream().anyMatch(p -> p.test(matching))) {
                 chain.doFilter(request, response);
                 return;
             }

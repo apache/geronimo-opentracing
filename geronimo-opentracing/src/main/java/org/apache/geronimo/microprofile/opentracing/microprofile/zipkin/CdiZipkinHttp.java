@@ -25,12 +25,11 @@ import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 
 import org.apache.geronimo.microprofile.opentracing.common.config.GeronimoOpenTracingConfig;
-import org.apache.geronimo.microprofile.opentracing.common.microprofile.zipkin.ZipkinLogger;
+import org.apache.geronimo.microprofile.opentracing.common.microprofile.zipkin.ZipkinHttp;
 import org.apache.geronimo.microprofile.opentracing.common.microprofile.zipkin.ZipkinSpan;
 
-// this allows to integrate with any backend using appenders.
 @ApplicationScoped
-public class CdiZipkinLogger extends ZipkinLogger {
+public class CdiZipkinHttp extends ZipkinHttp {
 
     @Inject
     private GeronimoOpenTracingConfig config;

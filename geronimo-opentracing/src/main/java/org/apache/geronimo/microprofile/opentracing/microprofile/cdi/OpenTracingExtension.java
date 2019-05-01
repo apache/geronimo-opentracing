@@ -41,6 +41,7 @@ import org.apache.geronimo.microprofile.opentracing.common.microprofile.client.O
 import org.apache.geronimo.microprofile.opentracing.common.microprofile.client.OpenTracingClientResponseFilter;
 import org.apache.geronimo.microprofile.opentracing.common.microprofile.thread.OpenTracingExecutorService;
 import org.apache.geronimo.microprofile.opentracing.microprofile.zipkin.CdiZipkinConverter;
+import org.apache.geronimo.microprofile.opentracing.microprofile.zipkin.CdiZipkinHttp;
 import org.apache.geronimo.microprofile.opentracing.microprofile.zipkin.CdiZipkinLogger;
 import org.eclipse.microprofile.opentracing.Traced;
 
@@ -51,12 +52,12 @@ public class OpenTracingExtension implements Extension {
     private GeronimoOpenTracingConfig config;
 
     private boolean useZipkin;
-    private boolean useZipkinLogger;
+    private String zipkinSender;
 
     void onStart(@Observes final BeforeBeanDiscovery beforeBeanDiscovery) {
         config = GeronimoOpenTracingConfig.create();
         useZipkin = Boolean.parseBoolean(config.read("span.converter.zipkin.active", "true"));
-        useZipkinLogger = useZipkin && Boolean.parseBoolean(config.read("span.converter.zipkin.logger.active", "true"));
+        zipkinSender = config.read("span.converter.zipkin.sender", "logger");
     }
 
     void vetoDefaultConfigIfScanned(@Observes final ProcessAnnotatedType<GeronimoOpenTracingConfig> config) {
@@ -101,8 +102,14 @@ public class OpenTracingExtension implements Extension {
     }
 
     void zipkinLoggerToggle(@Observes final ProcessAnnotatedType<CdiZipkinLogger> onZipkinLogger) {
-        if (!useZipkinLogger) {
+        if (!"logger".equalsIgnoreCase(zipkinSender) || !Boolean.parseBoolean(config.read("span.converter.zipkin.logger.active", "true"))) {
             onZipkinLogger.veto();
+        }
+    }
+
+    void zipkinHttpToggle(@Observes final ProcessAnnotatedType<CdiZipkinHttp> onZipkinHttp) {
+        if (!"http".equalsIgnoreCase(zipkinSender) || !Boolean.parseBoolean(config.read("span.converter.zipkin.http.active", "true"))) {
+            onZipkinHttp.veto();
         }
     }
 
