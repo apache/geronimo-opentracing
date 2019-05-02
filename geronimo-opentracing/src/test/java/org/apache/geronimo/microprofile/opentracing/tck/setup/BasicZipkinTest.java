@@ -23,17 +23,13 @@ import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.arquillian.testng.Arquillian;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.ClassLoaderAsset;
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.jboss.shrinkwrap.descriptor.api.Descriptors;
 import org.junit.Ignore;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 import zipkin2.Span;
-import zipkin2.junit.ZipkinRule;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -73,6 +69,8 @@ public class BasicZipkinTest extends Arquillian {
         System.setProperty("geronimo.opentracing.span.converter.zipkin.http.maxSpansPerBulk", "1");
         System.setProperty("geronimo.opentracing.span.converter.zipkin.http.maxSpansIteration","1");
         System.setProperty("geronimo.opentracing.span.converter.zipkin.http.bufferSize","1");
+        System.setProperty("geronimo.opentracing.span.converter.zipkin.http.useV2","true");
+
     }
 
 

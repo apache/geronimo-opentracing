@@ -50,6 +50,7 @@ public class ZipkinConverter implements Listener<FinishedSpan> {
     private IdGenerator idGenerator;
 
     private String serviceName;
+    private boolean useV2 = false;
 
     public void setZipkinSpanEvent(final Bus<ZipkinSpan> zipkinSpanEvent) {
         this.zipkinSpanEvent = zipkinSpanEvent;
@@ -65,6 +66,7 @@ public class ZipkinConverter implements Listener<FinishedSpan> {
 
     public void init() {
         serviceName = config.read("zipkin.serviceName", getHostName() + "_" + getPid());
+        useV2 = Boolean.parseBoolean(config.read("span.converter.zipkin.http.useV2", "false").trim());
     }
 
     @Override
@@ -91,7 +93,14 @@ public class ZipkinConverter implements Listener<FinishedSpan> {
     private ZipkinSpan toZipkin(final SpanImpl span) {
         final ZipkinSpan.ZipkinEndpoint endpoint = toEndpoint(span);
 
-        final ZipkinSpan zipkin = new ZipkinSpan();
+        final ZipkinSpan zipkin;
+        if (useV2) {
+            zipkin = new ZipkinSpan();
+        } else {
+            zipkin = new ZipkinV1Span();
+            ((ZipkinV1Span) zipkin).setBinaryAnnotations(toBinaryAnnotations(span.getTags()));
+        }
+
         if (idGenerator.isCounter()) {
             zipkin.setParentId(asLong(span.getParentId()));
             zipkin.setTraceId(asLong(span.getTraceId()));
@@ -106,7 +115,7 @@ public class ZipkinConverter implements Listener<FinishedSpan> {
         zipkin.setTimestamp(span.getTimestamp());
         zipkin.setDuration(span.getDuration());
         zipkin.setAnnotations(toAnnotations(span));
-        zipkin.setBinaryAnnotations(toBinaryAnnotations(span.getTags()));
+
         zipkin.setTags(span.getTags().entrySet().stream().filter(e -> !Tags.SPAN_KIND.getKey().equalsIgnoreCase(e.getKey()))
                 .collect(toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))));
 
