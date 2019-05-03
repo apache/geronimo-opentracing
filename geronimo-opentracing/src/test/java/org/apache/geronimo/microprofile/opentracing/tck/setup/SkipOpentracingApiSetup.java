@@ -21,6 +21,9 @@ import org.jboss.arquillian.core.api.annotation.Observes;
 import org.jboss.arquillian.core.spi.LoadableExtension;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.Filters;
+import org.jboss.shrinkwrap.api.Node;
+
+import java.util.Collection;
 
 // the tck put the opentracing-api in the war but not our impl, let's fix it by using the apploader api jar!
 public class SkipOpentracingApiSetup implements LoadableExtension {
@@ -34,8 +37,10 @@ public class SkipOpentracingApiSetup implements LoadableExtension {
 
         public void clean(@Observes final BeforeDeploy beforeDeploy) {
             final Archive<?> archive = beforeDeploy.getDeployment().getArchive();
-            archive.delete(archive.getContent(Filters.include("\\/WEB-INF\\/lib\\/opentracing\\-api\\-.*\\.jar")).values()
-                    .iterator().next().getPath());
+            final Collection<Node> opentracingApi = archive.getContent(Filters.include("\\/WEB-INF\\/lib\\/opentracing\\-api\\-.*\\.jar")).values();
+            if (opentracingApi != null && !opentracingApi.isEmpty()) {
+                archive.delete(opentracingApi.iterator().next().getPath());
+            }
         }
     }
 }

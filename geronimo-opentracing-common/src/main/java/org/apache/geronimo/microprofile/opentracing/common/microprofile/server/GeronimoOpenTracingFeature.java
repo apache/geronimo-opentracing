@@ -88,6 +88,7 @@ public class GeronimoOpenTracingFeature implements DynamicFeature {
         final String path = Stream.of(
                 ofNullable(resourceInfo.getResourceClass().getAnnotation(Path.class)).map(Path::value).orElse(""),
                 ofNullable(resourceInfo.getResourceMethod().getAnnotation(Path.class)).map(Path::value).orElse(""))
+                .map(it -> it.equals("/") ? "" : it)
                 .map(it -> it.substring(it.startsWith("/") ? 1 : 0, it.endsWith("/") ? it.length() - 1 : it.length()))
                 .filter(it -> !it.isEmpty())
                 .collect(joining("/", "/", ""));

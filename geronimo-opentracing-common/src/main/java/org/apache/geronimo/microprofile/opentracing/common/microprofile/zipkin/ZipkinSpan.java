@@ -30,7 +30,6 @@ public class ZipkinSpan {
     private ZipkinEndpoint localEndpoint;
     private ZipkinEndpoint remoteEndpoint;
     private List<ZipkinAnnotation> annotations;
-    private List<ZipkinBinaryAnnotation> binaryAnnotations;
     private Map<String, String> tags;
     private Boolean debug;
     private Boolean shared;
@@ -89,14 +88,6 @@ public class ZipkinSpan {
 
     public void setAnnotations(final List<ZipkinAnnotation> annotations) {
         this.annotations = annotations;
-    }
-
-    public List<ZipkinBinaryAnnotation> getBinaryAnnotations() {
-        return binaryAnnotations;
-    }
-
-    public void setBinaryAnnotations(final List<ZipkinBinaryAnnotation> binaryAnnotations) {
-        this.binaryAnnotations = binaryAnnotations;
     }
 
     public Boolean getDebug() {
