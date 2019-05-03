@@ -24,7 +24,6 @@ import org.jboss.arquillian.testng.Arquillian;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.ClassLoaderAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.Ignore;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
@@ -38,7 +37,6 @@ import javax.ws.rs.core.Response;
 import java.net.URL;
 import java.util.List;
 
-@Ignore
 public class BasicZipkinTest extends Arquillian {
 
     @Deployment
