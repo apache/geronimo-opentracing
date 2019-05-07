@@ -50,7 +50,7 @@ public class OpenTracingServerRequestFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(final ContainerRequestContext context) {
-        if (context.getProperty(OpenTracingClientRequestFilter.class.getName()) != null || skip) {
+        if (context.getProperty(OpenTracingFilter.class.getName()) != null || skip) {
             return;
         }
 
