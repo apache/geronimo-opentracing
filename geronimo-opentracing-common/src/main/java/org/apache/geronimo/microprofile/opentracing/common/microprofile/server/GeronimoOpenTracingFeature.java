@@ -39,7 +39,7 @@ import org.eclipse.microprofile.opentracing.Traced;
 
 import io.opentracing.Tracer;
 
-@Provider
+// @Provider - don't let it be scanned by EE containers like tomee, it is in CDI module anyway!
 // @Dependent
 public class GeronimoOpenTracingFeature implements DynamicFeature {
     private Tracer tracer;
