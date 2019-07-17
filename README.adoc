@@ -39,3 +39,8 @@ NOTE: if you are using Microprofile Config it is used, otherwise it uses system 
 == ExecutorServices
 
 To monitor a CDI executor service, you can decorate it with `@TracedExecutorService`.
+
+== Extension module
+
+`geronimo-opentracing-extension` provides a `TracingProxyFactory` module allowing to use java proxies (on interfaces)
+to add tracing to all methods of the decorated instance.

@@ -94,10 +94,22 @@
     </dependency>
   </dependencies>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.geronimo.specs</groupId>
+        <artifactId>geronimo-jcdi_2.0_spec</artifactId>
+        <version>1.1</version>
+        <scope>provided</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <modules>
     <module>geronimo-opentracing-common</module>
     <module>geronimo-opentracing</module>
     <module>geronimo-opentracing-osgi</module>
+    <module>geronimo-opentracing-extension</module>
   </modules>
 
   <build>
