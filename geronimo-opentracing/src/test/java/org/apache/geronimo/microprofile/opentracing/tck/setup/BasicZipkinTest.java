@@ -68,7 +68,6 @@ public class BasicZipkinTest extends Arquillian {
         System.setProperty("geronimo.opentracing.span.converter.zipkin.http.maxSpansIteration","1");
         System.setProperty("geronimo.opentracing.span.converter.zipkin.http.bufferSize","1");
         System.setProperty("geronimo.opentracing.span.converter.zipkin.http.useV2","true");
-
     }
 
 
@@ -78,8 +77,6 @@ public class BasicZipkinTest extends Arquillian {
     @Test
     @RunAsClient
     public void testSimpleService() throws Exception {
-        System.out.println(zipkin.httpUrl());
-
         Client client = ClientBuilder.newClient();
         String url = serviceUrl.toExternalForm() + "hello";
 

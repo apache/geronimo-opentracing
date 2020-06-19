@@ -96,9 +96,12 @@ public class ZipkinConverter implements Listener<FinishedSpan> {
         final ZipkinSpan zipkin;
         if (useV2) {
             zipkin = new ZipkinSpan();
+            zipkin.setTags(span.getTags().entrySet().stream().filter(e -> !Tags.SPAN_KIND.getKey().equalsIgnoreCase(e.getKey()))
+                    .collect(toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))));
         } else {
             zipkin = new ZipkinV1Span();
             ((ZipkinV1Span) zipkin).setBinaryAnnotations(toBinaryAnnotations(span.getTags()));
+            zipkin.setAnnotations(toAnnotations(span));
         }
 
         if (idGenerator.isCounter()) {
@@ -114,16 +117,11 @@ public class ZipkinConverter implements Listener<FinishedSpan> {
         zipkin.setKind(ofNullable(span.getKind()).map(s -> s.toUpperCase(ROOT)).orElse(null));
         zipkin.setTimestamp(span.getTimestamp());
         zipkin.setDuration(span.getDuration());
-        zipkin.setAnnotations(toAnnotations(span));
-
-        zipkin.setTags(span.getTags().entrySet().stream().filter(e -> !Tags.SPAN_KIND.getKey().equalsIgnoreCase(e.getKey()))
-                .collect(toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))));
 
         if (Tags.SPAN_KIND_CLIENT.equals(String.valueOf(span.getTags().get(Tags.SPAN_KIND.getKey())))) {
             zipkin.setRemoteEndpoint(endpoint);
-        } else { // server
-            zipkin.setLocalEndpoint(endpoint);
         }
+        zipkin.setLocalEndpoint(endpoint); // must alway exist
 
         return zipkin;
     }
