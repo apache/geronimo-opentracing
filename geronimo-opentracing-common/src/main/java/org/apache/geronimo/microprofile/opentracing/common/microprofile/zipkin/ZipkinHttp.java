@@ -123,7 +123,7 @@ public class ZipkinHttp implements Listener<ZipkinSpan> {
             ClientTracingRegistrar.configure(clientBuilder);
         }
         client = clientBuilder.build();
-        logger().severe("Zipkin http sender configured");
+        logger().info("Zipkin http sender configured");
     }
 
     private Logger logger() {
