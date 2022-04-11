@@ -23,9 +23,9 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Specializes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Specializes;
 
 import org.apache.geronimo.microprofile.opentracing.common.impl.FinishedSpan;
 import org.apache.geronimo.microprofile.opentracing.common.impl.SpanContextImpl;

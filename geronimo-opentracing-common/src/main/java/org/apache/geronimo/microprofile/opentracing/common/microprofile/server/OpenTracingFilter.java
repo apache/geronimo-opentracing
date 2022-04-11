@@ -18,16 +18,16 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.geronimo.microprofile.opentracing.common.config.GeronimoOpenTracingConfig;
 import org.apache.geronimo.microprofile.opentracing.common.impl.ScopeManagerImpl;
@@ -134,15 +134,14 @@ public class OpenTracingFilter implements Filter {
                                 new ServletHeaderTextMap(req, HttpServletResponse.class.cast(response)))))
                                         .ifPresent(builder::asChildOf);
 
-                final Scope scope = builder.startActive(true);
-                final Span span = scope.span();
+                final Span span = builder.start();
 
                 if (!skipDefaultTags) {
                     Tags.HTTP_METHOD.set(span, req.getMethod());
                     Tags.HTTP_URL.set(span, req.getRequestURL().toString());
                 }
 
-                request.setAttribute(OpenTracingFilter.class.getName(), scope);
+                request.setAttribute(OpenTracingFilter.class.getName(), span);
             }
         }
         if (skipUrls != null && !skipUrls.isEmpty()) {
@@ -156,16 +155,16 @@ public class OpenTracingFilter implements Filter {
         try {
             chain.doFilter(request, response);
         } catch (final Exception ex) {
-            getCurrentScope(request).ifPresent(scope -> onError(response, ex, scope));
+            getCurrentSpan(request).ifPresent(scope -> onError(response, ex, scope));
             throw ex;
         } finally {
-            getCurrentScope(request).ifPresent(scope -> {
+            getCurrentSpan(request).ifPresent(scope -> {
                 if (request.isAsyncStarted()) {
                     request.getAsyncContext().addListener(new AsyncListener() {
 
                         @Override
                         public void onComplete(final AsyncEvent event) {
-                            scope.close();
+                            scope.finish();
                         }
 
                         @Override
@@ -198,15 +197,14 @@ public class OpenTracingFilter implements Filter {
                         ScopeManagerImpl.class.cast(managerImpl).clear();
                     }
                 } else {
-                    scope.close();
+                    scope.finish();
                 }
             });
         }
     }
 
-    private void onError(final ServletResponse response, final Throwable ex, final Scope scope) {
+    private void onError(final ServletResponse response, final Throwable ex, final Span span) {
         final int status = HttpServletResponse.class.cast(response).getStatus();
-        final Span span = scope.span();
         Tags.HTTP_STATUS.set(span,
                 status == HttpServletResponse.SC_OK ? HttpServletResponse.SC_INTERNAL_SERVER_ERROR : status);
         if (forceStackLog) {
@@ -218,9 +216,9 @@ public class OpenTracingFilter implements Filter {
         }
     }
 
-    private Optional<Scope> getCurrentScope(final ServletRequest request) {
+    private Optional<Span> getCurrentSpan(final ServletRequest request) {
         return ofNullable(ofNullable(request.getAttribute(OpenTracingFilter.class.getName()))
-                .orElseGet(() -> tracer.scopeManager().active())).map(Scope.class::cast);
+                .orElseGet(() -> tracer.scopeManager().activeSpan())).map(Span.class::cast);
     }
 
     protected String buildServletOperationName(final HttpServletRequest req) {

@@ -16,9 +16,9 @@
  */
 package org.apache.geronimo.microprofile.opentracing.microprofile.server;
 
-import javax.enterprise.context.Dependent;
-import javax.inject.Inject;
-import javax.ws.rs.ext.Provider;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.ext.Provider;
 
 import org.apache.geronimo.microprofile.opentracing.common.config.GeronimoOpenTracingConfig;
 import org.apache.geronimo.microprofile.opentracing.common.microprofile.server.GeronimoOpenTracingFeature;

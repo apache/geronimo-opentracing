@@ -16,8 +16,9 @@
  */
 package org.apache.geronimo.opentracing.extension.proxy;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Optional.ofNullable;
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.tag.Tags;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
@@ -29,10 +30,8 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
-import io.opentracing.Scope;
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.tag.Tags;
+import static java.util.Collections.emptyMap;
+import static java.util.Optional.ofNullable;
 
 public class TracingProxyFactory {
     public <T> T decorate(final Tracer tracer, final T instance) {
@@ -80,7 +79,7 @@ public class TracingProxyFactory {
             tags.forEach(builder::withTag);
             ofNullable(tracer.activeSpan()).ifPresent(builder::asChildOf);
 
-            final Scope scope = builder.startActive(false /*just handle span inheritance for async case*/);
+            final Span span = builder.start();
             boolean doFinish = true;
             try {
                 final Object result = method.invoke(delegate, args);
@@ -90,24 +89,23 @@ public class TracingProxyFactory {
                     return stage.handle((r, e) -> {
                         try {
                             if (e != null) {
-                                onError(scope, e);
+                                onError(span, e);
                                 return rethrow(e);
                             }
                             return r;
                         } finally {
-                            scope.span().finish();
+                            span.finish();
                         }
                     });
                 }
                 return result;
             } catch (final InvocationTargetException ite) {
-                onError(scope, ite.getTargetException());
+                onError(span, ite.getTargetException());
                 throw ite.getTargetException();
             } finally {
                 if (doFinish) {
-                    scope.span().finish();
+                    span.finish();
                 }
-                scope.close();
             }
         }
 
@@ -121,8 +119,7 @@ public class TracingProxyFactory {
             throw new IllegalStateException(e);
         }
 
-        private void onError(final Scope scope, final Throwable e) {
-            final Span span = scope.span();
+        private void onError(final Span span, final Throwable e) {
             Tags.ERROR.set(span, true);
 
             final Map<String, Object> logs = new LinkedHashMap<>();
