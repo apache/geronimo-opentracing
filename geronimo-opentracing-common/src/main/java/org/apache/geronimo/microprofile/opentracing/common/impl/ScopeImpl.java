@@ -27,10 +27,10 @@ public class ScopeImpl implements Scope {
 
     private final Runnable onClose;
 
-    public ScopeImpl(final Runnable onClose, final Span span, final boolean finishSpanOnClose) {
+    public ScopeImpl(final Runnable onClose, final Span span) {
         this.onClose = onClose;
         this.span = span;
-        this.finishOnClose = finishSpanOnClose;
+        this.finishOnClose = true;
     }
 
     @Override
@@ -46,7 +46,6 @@ public class ScopeImpl implements Scope {
         }
     }
 
-    @Override
     public Span span() {
         return span;
     }

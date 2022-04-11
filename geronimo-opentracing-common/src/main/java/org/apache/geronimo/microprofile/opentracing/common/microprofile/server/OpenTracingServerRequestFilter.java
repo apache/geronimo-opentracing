@@ -18,13 +18,11 @@ package org.apache.geronimo.microprofile.opentracing.common.microprofile.server;
 
 import static java.util.Optional.ofNullable;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
 
 import org.apache.geronimo.microprofile.opentracing.common.impl.JaxRsHeaderTextMap;
-import org.apache.geronimo.microprofile.opentracing.common.microprofile.client.OpenTracingClientRequestFilter;
 
-import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
@@ -62,14 +60,13 @@ public class OpenTracingServerRequestFilter implements ContainerRequestFilter {
                 .orElseGet(() -> tracer.extract(Format.Builtin.HTTP_HEADERS, new JaxRsHeaderTextMap<>(context.getHeaders()))))
                 .ifPresent(builder::asChildOf);
 
-        final Scope scope = builder.startActive(true);
-        final Span span = scope.span();
+        final Span span = builder.start();
 
         if (!skipDefaultTags) {
             Tags.HTTP_METHOD.set(span, context.getMethod());
             Tags.HTTP_URL.set(span, context.getUriInfo().getRequestUri().toASCIIString());
         }
 
-        context.setProperty(OpenTracingFilter.class.getName(), scope);
+        context.setProperty(OpenTracingFilter.class.getName(), span);
     }
 }

@@ -16,16 +16,15 @@
  */
 package org.apache.geronimo.microprofile.opentracing.common.microprofile.client;
 
-import static java.util.Optional.ofNullable;
-
-import javax.annotation.Priority;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientResponseContext;
-import javax.ws.rs.client.ClientResponseFilter;
-
-import io.opentracing.Scope;
+import io.opentracing.Span;
 import io.opentracing.tag.Tags;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientResponseContext;
+import jakarta.ws.rs.client.ClientResponseFilter;
+
+import static java.util.Optional.ofNullable;
 
 // @ApplicationScoped
 @Priority(Priorities.HEADER_DECORATOR)
@@ -33,10 +32,10 @@ public class OpenTracingClientResponseFilter implements ClientResponseFilter {
 
     @Override
     public void filter(final ClientRequestContext req, final ClientResponseContext resp) {
-        ofNullable(req.getProperty(OpenTracingClientRequestFilter.class.getName())).map(Scope.class::cast)
-                .ifPresent(scope -> {
-                    Tags.HTTP_STATUS.set(scope.span(), resp.getStatus());
-                    scope.close();
+        ofNullable(req.getProperty(OpenTracingClientRequestFilter.class.getName())).map(Span.class::cast)
+                .ifPresent(span -> {
+                    Tags.HTTP_STATUS.set(span, resp.getStatus());
+                    span.finish();
                 });
     }
 }

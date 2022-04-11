@@ -24,9 +24,10 @@ import static java.util.stream.Collectors.toMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.apache.geronimo.microprofile.opentracing.common.config.GeronimoOpenTracingConfig;
 import org.apache.geronimo.microprofile.opentracing.common.spi.Bus;
@@ -80,7 +81,12 @@ public class GeronimoTracer implements Tracer {
 
     @Override
     public Span activeSpan() {
-        return ofNullable(scopeManager.active()).map(Scope::span).orElse(null);
+        return ofNullable(scopeManager.activeSpan()).orElse(null);
+    }
+
+    @Override
+    public Scope activateSpan(final Span span) {
+        return scopeManager.activate(span);
     }
 
     @Override
@@ -151,6 +157,11 @@ public class GeronimoTracer implements Tracer {
             return newContext(traceId, parentSpanId, spanId, baggages);
         }
         return null;
+    }
+
+    @Override
+    public void close() {
+        Optional.of(activeSpan()).ifPresent(Span::finish);
     }
 
     protected Span processNewSpan(final SpanImpl span) {

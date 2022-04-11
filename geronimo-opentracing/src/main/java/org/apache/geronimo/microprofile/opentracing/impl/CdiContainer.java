@@ -16,7 +16,7 @@
  */
 package org.apache.geronimo.microprofile.opentracing.impl;
 
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.apache.geronimo.microprofile.opentracing.common.spi.Container;
 

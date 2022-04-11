@@ -18,7 +18,7 @@ package org.apache.geronimo.microprofile.opentracing.common.microprofile.client;
 
 import java.util.concurrent.ExecutorService;
 
-import javax.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.ClientBuilder;
 
 import org.apache.geronimo.microprofile.opentracing.common.microprofile.thread.OpenTracingExecutorService;
 import org.apache.geronimo.microprofile.opentracing.common.spi.Container;

@@ -19,7 +19,7 @@ package org.apache.geronimo.microprofile.opentracing.common.impl;
 import java.util.Iterator;
 import java.util.Map;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import io.opentracing.propagation.TextMap;
 
@@ -38,7 +38,7 @@ public class JaxRsHeaderTextMap<T> implements TextMap {
     @Override
     public Iterator<Map.Entry<String, String>> iterator() {
         final Iterator<String> iterator = headers.keySet().iterator();
-        return new Iterator<Map.Entry<String, String>>() {
+        return new Iterator<>() {
 
             @Override
             public boolean hasNext() {
@@ -48,7 +48,7 @@ public class JaxRsHeaderTextMap<T> implements TextMap {
             @Override
             public Map.Entry<String, String> next() {
                 final String next = iterator.next();
-                return new Map.Entry<String, String>() {
+                return new Map.Entry<>() {
 
                     @Override
                     public String getKey() {
