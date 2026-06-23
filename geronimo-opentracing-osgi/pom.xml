@@ -32,7 +32,7 @@
 
     <pax.exam.version>4.12.0</pax.exam.version>
     <slf4j.version>1.7.25</slf4j.version>
-    <karaf.version>4.2.1</karaf.version>
+    <karaf.version>4.3.8</karaf.version>
     <johnzon.version>1.1.10</johnzon.version>
   </properties>
 
