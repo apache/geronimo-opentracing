@@ -54,6 +54,16 @@ public class SpanContextImpl implements SpanContext {
     }
 
     @Override
+    public String toTraceId() {
+        return String.valueOf(getTraceId());
+    }
+
+    @Override
+    public String toSpanId() {
+        return String.valueOf(getSpanId());
+    }
+
+    @Override
     public Iterable<Map.Entry<String, String>> baggageItems() {
         return baggageItems.entrySet();
     }

@@ -21,13 +21,12 @@ import static java.util.Optional.ofNullable;
 
 import java.util.function.Consumer;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 
 import org.apache.geronimo.microprofile.opentracing.common.config.GeronimoOpenTracingConfig;
 import org.apache.geronimo.microprofile.opentracing.common.impl.JaxRsHeaderTextMap;
 
-import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
@@ -71,8 +70,7 @@ public class OpenTracingClientRequestFilter implements ClientRequestFilter {
         ofNullable(SpanContext.class.cast(context.getProperty(CHILD_OF)))
                 .ifPresent(parent -> builder.ignoreActiveSpan().asChildOf(parent));
 
-        final Scope scope = builder.startActive(true);
-        final Span span = scope.span();
+        final Span span = builder.start();
         if (!skipDefaultTags) {
             Tags.HTTP_METHOD.set(span, context.getMethod());
             Tags.HTTP_URL.set(span, context.getUri().toASCIIString());
@@ -87,7 +85,7 @@ public class OpenTracingClientRequestFilter implements ClientRequestFilter {
                 .ifPresent(consumer -> Consumer.class.cast(consumer).accept(span));
 
         tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new JaxRsHeaderTextMap<>(context.getHeaders()));
-        context.setProperty(OpenTracingClientRequestFilter.class.getName(), scope);
+        context.setProperty(OpenTracingClientRequestFilter.class.getName(), span);
 
     }
 }

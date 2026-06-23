@@ -16,9 +16,9 @@
  */
 package org.apache.geronimo.microprofile.opentracing.microprofile.client;
 
-import javax.annotation.Priority;
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.Priorities;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.Priorities;
 
 import org.apache.geronimo.microprofile.opentracing.common.microprofile.client.OpenTracingClientResponseFilter;
 

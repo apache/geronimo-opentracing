@@ -20,8 +20,8 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import io.opentracing.propagation.TextMap;
 
@@ -43,7 +43,7 @@ public class ServletHeaderTextMap implements TextMap {
     @Override
     public Iterator<Map.Entry<String, String>> iterator() {
         final Enumeration<String> iterator = request.getHeaderNames();
-        return new Iterator<Map.Entry<String, String>>() {
+        return new Iterator<>() {
 
             @Override
             public boolean hasNext() {
@@ -53,7 +53,7 @@ public class ServletHeaderTextMap implements TextMap {
             @Override
             public Map.Entry<String, String> next() {
                 final String next = iterator.nextElement();
-                return new Map.Entry<String, String>() {
+                return new Map.Entry<>() {
 
                     @Override
                     public String getKey() {

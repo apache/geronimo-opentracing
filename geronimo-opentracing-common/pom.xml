@@ -19,7 +19,7 @@
   <parent>
     <artifactId>geronimo-opentracing-parent</artifactId>
     <groupId>org.apache.geronimo</groupId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -43,15 +43,15 @@
             <Import-Package>
               io.opentracing,io.opentracing.propagation,
               io.opentracing.tag,
-              javax.annotation;version="[1.0,3)",
-              javax.json.bind;version="[1.0,3)";resolution:=optional,
-              javax.servlet,
-              javax.servlet.http,
-              javax.ws.rs;version="[2,3)",
-              javax.ws.rs.client;version="[2,3)",
-              javax.ws.rs.container;version="[2,3)",
-              javax.ws.rs.core;version="[2,3)",
-              javax.ws.rs.ext;version="[2,3)",
+              jakarta.annotation;version="[1.0,3)",
+              jakarta.json.bind;version="[1.0,3)";resolution:=optional,
+              jakarta.servlet,
+              jakarta.servlet.http,
+              jakarta.ws.rs;version="[2,3)",
+              jakarta.ws.rs.client;version="[2,3)",
+              jakarta.ws.rs.container;version="[2,3)",
+              jakarta.ws.rs.core;version="[2,3)",
+              jakarta.ws.rs.ext;version="[2,3)",
               *
             </Import-Package>
           </instructions>

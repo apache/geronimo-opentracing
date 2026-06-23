@@ -16,7 +16,11 @@
  */
 package org.apache.geronimo.microprofile.opentracing.common.impl;
 
-import static java.util.stream.Collectors.toMap;
+import io.opentracing.References;
+import io.opentracing.Span;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
+import io.opentracing.tag.Tag;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,11 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 
-import io.opentracing.References;
-import io.opentracing.Scope;
-import io.opentracing.Span;
-import io.opentracing.SpanContext;
-import io.opentracing.Tracer;
+import static java.util.stream.Collectors.toMap;
 
 public class SpanBuilderImpl implements Tracer.SpanBuilder {
 
@@ -105,17 +105,17 @@ public class SpanBuilderImpl implements Tracer.SpanBuilder {
     }
 
     @Override
+    public <T> Tracer.SpanBuilder withTag(final Tag<T> tag, final T t) {
+        tags.put(tag.getKey(), t);
+        return this;
+    }
+
+    @Override
     public Tracer.SpanBuilder withStartTimestamp(final long microseconds) {
         this.timestamp = microseconds;
         return this;
     }
 
-    @Override
-    public Scope startActive(final boolean finishSpanOnClose) {
-        return tracer.scopeManager().activate(startManual(), finishSpanOnClose);
-    }
-
-    @Override
     public Span startManual() {
         if (timestamp < 0) {
             timestamp = TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis());

@@ -16,7 +16,7 @@
  */
 package org.apache.geronimo.microprofile.opentracing.config;
 
-import javax.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.Vetoed;
 
 import org.apache.geronimo.microprofile.opentracing.common.config.GeronimoOpenTracingConfig;
 import org.eclipse.microprofile.config.Config;

@@ -18,8 +18,8 @@ package org.apache.geronimo.microprofile.opentracing.common.microprofile.zipkin;
 
 import java.util.logging.Logger;
 
-import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
 
 import org.apache.geronimo.microprofile.opentracing.common.config.GeronimoOpenTracingConfig;
 import org.apache.geronimo.microprofile.opentracing.common.spi.Listener;

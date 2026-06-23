@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
+import io.opentracing.tag.Tag;
 import io.opentracing.tag.Tags;
 
 public class SpanImpl implements Span {
@@ -104,6 +105,12 @@ public class SpanImpl implements Span {
     @Override
     public Span setTag(final String key, final Number value) {
         tags.put(key, value);
+        return this;
+    }
+
+    @Override
+    public <T> Span setTag(final Tag<T> tag, final T t) {
+        tags.put(tag.getKey(), t);
         return this;
     }
 

@@ -25,29 +25,30 @@ public class ScopeManagerImpl implements ScopeManager {
 
     private final ThreadLocal<Scope> current = new ThreadLocal<>();
 
+    public void clear() {
+        current.remove();
+    }
+
     @Override
-    public Scope activate(final Span span, final boolean finishSpanOnClose) {
+    public Scope activate(final Span span) {
         final Thread thread = Thread.currentThread();
         final Scope oldScope = current.get();
         final ScopeImpl newScope = new ScopeImpl(() -> {
             if (Thread.currentThread() == thread) {
                 current.set(oldScope);
             } // else error?
-        }, span, finishSpanOnClose);
+        }, span);
         current.set(newScope);
         return newScope;
     }
 
     @Override
-    public Scope active() {
-        final Scope scope = current.get();
+    public Span activeSpan() {
+        final ScopeImpl scope = (ScopeImpl) current.get();
         if (scope == null) {
             current.remove();
+            return null;
         }
-        return scope;
-    }
-
-    public void clear() {
-        current.remove();
+        return scope.span();
     }
 }

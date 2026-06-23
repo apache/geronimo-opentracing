@@ -18,10 +18,10 @@ package org.apache.geronimo.microprofile.opentracing.microprofile.cdi;
 
 import java.io.Serializable;
 
-import javax.annotation.Priority;
-import javax.inject.Inject;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.inject.Inject;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 import org.apache.geronimo.microprofile.opentracing.common.microprofile.thread.ScopePropagatingCallable;
 

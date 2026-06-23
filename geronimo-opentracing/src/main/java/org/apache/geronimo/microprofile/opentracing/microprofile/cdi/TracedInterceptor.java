@@ -28,19 +28,18 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.Intercepted;
-import javax.enterprise.inject.spi.AnnotatedType;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Inject;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Intercepted;
+import jakarta.enterprise.inject.spi.AnnotatedType;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.inject.Inject;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 import org.eclipse.microprofile.opentracing.Traced;
 
-import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
@@ -83,17 +82,16 @@ public class TracedInterceptor implements Serializable {
         }
 
         final Tracer.SpanBuilder spanBuilder = tracer.buildSpan(meta.operationName);
-        final Scope parent = tracer.scopeManager().active();
+        final Span parent = tracer.scopeManager().activeSpan();
         if (parent != null) {
-            spanBuilder.asChildOf(parent.span());
+            spanBuilder.asChildOf(parent);
         }
-        Scope scope = null;
+        Span span = null;
         try {
-            scope = spanBuilder.startActive(true);
+            span = spanBuilder.start();
             return context.proceed();
         } catch (final RuntimeException re) {
-            if (scope != null) {
-                final Span span = scope.span();
+            if (span != null) {
                 Tags.ERROR.set(span, true);
                 final Map<String, Object> logs = new LinkedHashMap<>();
                 logs.put("event", Tags.ERROR.getKey());
@@ -102,8 +100,8 @@ public class TracedInterceptor implements Serializable {
             }
             throw re;
         } finally {
-            if (scope != null) {
-                scope.close();
+            if (span != null) {
+                span.finish();
             }
         }
     }

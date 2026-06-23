@@ -16,7 +16,7 @@
  */
 package org.apache.geronimo.microprofile.opentracing.impl;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.apache.geronimo.microprofile.opentracing.common.impl.ScopeManagerImpl;
 
